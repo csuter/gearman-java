@@ -1,0 +1,7 @@
+Gearman Java Library
+
+A "pure java" implmentation of the Gearman "client" and "worker" interfaces.
+
+For the time being, portions of this library are licensed under the LGPL
+license while other portions are licensed under BSD. We seeek to rectify
+this 'mix of licenses' in very near future.

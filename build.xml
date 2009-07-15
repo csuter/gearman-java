@@ -1,0 +1,114 @@
+<project name="gearman-java" default="usage" basedir=".">
+    <property name="project.version" value="0.01"/>
+    <property name="src.dir" location="./src" />
+    <property name="test.src.dir" location="./test" />
+    <property name="build.dir" location="./build" />
+    <property name="build.classes.dir" location="${build.dir}/classes" />
+    <property name="build.tests.dir" location="${build.dir}/tests" />
+    <property name="dist.dir" location="${build.dir}/../dist" />
+    <property name="dist.lib.dir" location="${dist.dir}/lib" />
+    <property name="build.docs.dir" location="${build.dir}/javadocs" />
+    <property name="dist.docs.dir" location="${dist.dir}/docs" />
+    <property name="dist.jar" location="${dist.lib.dir}/${ant.project.name}-${project.version}.jar"/>
+    <property name="api.pkg" value="org.gearman"/>
+    <path id="build.classpath">
+        <pathelement location="${build.classes.dir}" />
+    </path>
+    <path id="test.classpath">
+        <pathelement location="${dist.jar}" />
+        <pathelement location="${build.tests.dir}"/>
+        <pathelement location="${junit.jar}" />
+    </path>
+
+    <target name="usage">
+        <echo message="Build the ${ant.project.name} project."/>
+        <echo message=""/>
+        <echo message="This build system support the follow targets:"/>
+        <echo message=""/>
+        <echo message="help:    display this help message."/>
+        <echo message=""/>
+        <echo message="compile: builds the project source files."/>
+        <echo message=""/>
+        <echo message="dist:    generates the project jar file and javadocs."/>
+        <echo message=""/>
+        <echo message="test:    builds the jar file and testsuite. Runs the regression tests"/>
+        <echo message="         against the built jar. Requires Junit 4.6 to be on classpath"/>
+        <echo message="         or specified via the junit.jar property (-Djunit.jar)"/>
+        <echo message=""/>
+        <echo message="clean:   removes the built classes, jar files and test results"/>
+        <echo message=""/>
+    </target>
+
+
+    <!-- removes ./build dir -->
+    <target name="clean">
+        <delete dir="${dist.dir}" quiet="true" />
+        <delete dir="${build.dir}" quiet="true" />
+    </target>
+
+    <!-- Prep the build dir -->
+    <target name="init">
+        <mkdir dir="${build.classes.dir}" />
+        <mkdir dir="${build.tests.dir}" />
+        <mkdir dir="${dist.dir}" />
+        <mkdir dir="${dist.lib.dir}" />
+        <mkdir dir="${build.docs.dir}" />
+        <mkdir dir="${dist.docs.dir}" />
+    </target>
+
+    <!-- build it -->
+    <target name="compile" depends="init">
+        <javac srcdir="${src.dir}" destdir="${build.classes.dir}" debug="true">
+        	<compilerarg value="-Xlint"/>
+        </javac>
+    </target>
+
+    <!-- generate javadocs -->
+    <target name="javadoc" depends="compile">
+        <delete failonerror="false">
+            <fileset dir="${build.docs.dir}" />
+        </delete>
+        <javadoc sourcepath="${src.dir}"
+                    destdir="${build.docs.dir}"
+                    packagenames= "org.gearman.*"
+                    author= "true"
+                    private="true"
+                    version="true"
+                    classpathref="build.classpath"
+                    defaultexcludes="yes"
+                    use="true"
+                    windowtitle="Gearman Java Library API documentation"
+                    doctitle="&lt;h1&gt;Gearman Java Library documentation &lt;/h1&gt;">
+        </javadoc>
+    </target>
+
+    <!-- build jar file -->
+    <target name="dist" depends="compile,javadoc">
+        <jar jarfile="${dist.jar}" basedir="${build.classes.dir}"/>
+        <jar jarfile="${dist.docs.dir}/${ant.project.name}-${project.version}-javadocs.jar" basedir="${build.docs.dir}"/>
+    </target>
+
+    <!-- build junit tests -->
+    <target name="compileTests" depends="dist">
+        <javac srcdir="${test.src.dir}" destdir="${build.tests.dir}" classpathref="test.classpath" debug="true" />
+    </target>
+
+    <!-- Run junit tests. Requires that junit.jar be on the CLASSPATH or    -->
+    <!-- the property ${junit.jar} be set to point to the path for the      -->
+    <!-- junit.jar file. Some of the tests may require that a gearmaand     -->
+    <!-- instance be running and listening on the default port.             -->
+    <target name="test" depends="compileTests">
+        <mkdir dir="${build.tests.dir}/results" />
+        <junit printsummary="true" failureproperty="junit.failure">
+            <formatter type="plain"/>
+            <classpath refid="test.classpath" />
+            <batchtest todir="${build.tests.dir}/results">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test*.java" />
+                    <exclude name="**/TestUtil.java" />
+                </fileset>
+            </batchtest>
+        </junit>
+        <fail if="junit.failure" message="One or more unit tests failed. See ${build.tests.dir}/results for details."/>
+    </target>
+</project>

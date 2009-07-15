@@ -1,0 +1,9 @@
+bin
+build
+dist
+.classpath
+.project
+.settings
+nbbuild.xml
+nbproject
+manifest.mf
