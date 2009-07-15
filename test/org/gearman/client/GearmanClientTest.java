@@ -51,10 +51,10 @@ public class GearmanClientTest {
      */
     public void addHostsTests() throws IOException {
         GearmanClientImpl gc = new GearmanClientImpl();
-        int port = Constants.GEARMAN_DEFAULT_TCP_PORT;
+        int port = Constants.GEARMAN_DEFAULT_TCP_PORT + 1;
         int iters = 10;
         for (int i = 0; i < iters; i++) {
-            ServerSocket s = new ServerSocket(Constants.GEARMAN_DEFAULT_TCP_PORT + i);
+            ServerSocket s = new ServerSocket(port + i);
             GearmanNIOJobServerConnection conn =
                     new GearmanNIOJobServerConnection("localhost", port + i);
             Assert.assertFalse("Client claims to have jobserver localhost:" +
@@ -134,7 +134,7 @@ public class GearmanClientTest {
      */
     public void removeJobServerTest() throws IOException {
         GearmanClientImpl gc = new GearmanClientImpl();
-        int port = Constants.GEARMAN_DEFAULT_TCP_PORT;
+        int port = Constants.GEARMAN_DEFAULT_TCP_PORT + 1;
         int iters = 10;
         ServerSocket[] ss = new ServerSocket[iters];
         for (int i = 0; i < iters; i++) {
