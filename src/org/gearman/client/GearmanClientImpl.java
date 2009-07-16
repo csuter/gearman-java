@@ -236,9 +236,6 @@ public class GearmanClientImpl
         } catch (IOException ioe) {
             throw new RejectedExecutionException(ioe);
         }
-        if (submitJobMap.get(session) != null) {
-            System.out.println("GAH!");
-        }
         job.setJobServerSession(session);
         GearmanPacket submitRequest = getPacketFromJob(job);
         GearmanTask submittedJob =
@@ -394,8 +391,10 @@ public class GearmanClientImpl
         switch (t) {
             case JOB_CREATED:
                 GearmanJobImpl sjob = submitJobMap.get(s);
-                jobsMaps.put(new JobHandle(sjob.getHandle()), sjob);
-                updatedJobs.add(p);
+                if (!sjob.isBackgroundJob()) {
+                    jobsMaps.put(new JobHandle(sjob.getHandle()), sjob);
+                    updatedJobs.add(p);
+                }
                 break;
             case WORK_DATA:
             case WORK_STATUS:
