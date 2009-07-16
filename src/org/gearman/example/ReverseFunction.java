@@ -11,15 +11,10 @@ import org.gearman.util.ByteUtils;
 import org.gearman.worker.AbstractGearmanFunction;
 
 public class ReverseFunction extends AbstractGearmanFunction {
-
+    
     public GearmanJobResult executeFunction() throws Exception {
 
-        StringBuffer sb = null;
-        if (this.data instanceof byte[]) {
-            sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte[]) this.data));
-        } else {
-            sb = new StringBuffer(data.toString());
-        }
+        StringBuffer sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte[]) this.data));
         GearmanJobResult gjr = new GearmanJobResultImpl(this.jobHandle,
                 true, sb.reverse().toString().getBytes(),
                 new byte[0], new byte[0], 0, 0);

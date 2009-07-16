@@ -124,11 +124,11 @@ public class GearmanWorkerImpl
     }
 
     public GearmanWorkerImpl() {
-        this(Executors.newSingleThreadExecutor());
+        this (null);
     }
 
     //For the time being this is private constructor because at this point in
-    //time we only support a singleThreadExecutor. When we support differnt
+    //time we are not supporting executors. When we support differnt
     //variants of the Execute services, we will open this up
     private GearmanWorkerImpl(ExecutorService executorService) {
         DESCRIPTION = DESCRIPION_PREFIX + ":" + Thread.currentThread().getId();
@@ -441,10 +441,12 @@ public class GearmanWorkerImpl
         ArrayList<Exception> exceptions = new ArrayList<Exception>();
 
         // This gives any jobs in flight a chance to complete
-        if (completeTasks) {
-            executorService.shutdown();
-        } else {
-            executorService.shutdownNow();
+        if (executorService != null) {
+            if (completeTasks) {
+                executorService.shutdown();
+            } else {
+                executorService.shutdownNow();
+            }
         }
 
         for (GearmanJobServerSession sess : sessionList) {
@@ -483,23 +485,27 @@ public class GearmanWorkerImpl
     }
 
     private void submitFunction (GearmanFunction fun) {
-        Future<GearmanPacket> gp = executorService.submit(fun);
-        FunctionDefinition def = functionMap.get(fun.getName());
         try {
-            if (def == null) {
-                LOG.log(Level.WARNING, "Unable to find function " +
-                        "execution attributes for function " +
-                        fun.getName());
-            }
-            if (def != null && def.getTimeout() > 0) {
-                LOG.log(Level.FINER, "Worker:  " + this + " awaiting" +
-                        " results of job " + gp + " with timout of " +
-                        def.getTimeout() + " milliseconds");
-                gp.get(def.getTimeout(), TimeUnit.MILLISECONDS);
+            if (executorService == null) {
+                fun.call();
             } else {
-                LOG.log(Level.FINER, "Worker:  " + this + " awaiting" +
-                        " results of job " + gp);
-                gp.get();
+                Future<GearmanPacket> gp = executorService.submit(fun);
+                FunctionDefinition def = functionMap.get(fun.getName());
+                if (def == null) {
+                    LOG.log(Level.WARNING, "Unable to find function " +
+                            "execution attributes for function " +
+                            fun.getName());
+                }
+                if (def != null && def.getTimeout() > 0) {
+                    LOG.log(Level.FINER, "Worker:  " + this + " awaiting" +
+                            " results of job " + gp + " with timout of " +
+                            def.getTimeout() + " milliseconds");
+                    gp.get(def.getTimeout(), TimeUnit.MILLISECONDS);
+                } else {
+                    LOG.log(Level.FINER, "Worker:  " + this + " awaiting" +
+                            " results of job " + gp);
+                    gp.get();
+                }
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Exception while getting function " +
