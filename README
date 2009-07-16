@@ -1,7 +1,120 @@
-Gearman Java Library
+== Gearman-Java library ==
 
-A "pure java" implmentation of the Gearman "client" and "worker" interfaces.
+A "pure java" implementation of the Gearman "client" and "worker" interfaces.
 
 For the time being, portions of this library are licensed under the LGPL
-license while other portions are licensed under BSD. We seeek to rectify
+license while other portions are licensed under BSD. We seek to rectify
 this 'mix of licenses' in very near future.
+
+== RUNTIME REQUIREMENTS ==
+
+- JDK 5 or greater.
+
+- A Gearman Job Server. The gearman-java library has been tested using the 0.8 C
+  based gearmand Gearman Job Server, but in theory it should work with any
+  server that understands the Gearman Protocol.
+
+== BUILD REQUIREMENTS ==
+
+- JDK 5 or greater.
+
+- Ant 1.7 (may work with earlier versions).
+
+- JUnit 4.6 (Junit only required if you want to run the regression suite).
+
+== HOW-TO/EXAMPLES ==
+
+- How to build the project jar file
+
+  1) Ensure that ant 1.7 is on your path
+
+  2) Change your working directory to the root of the gearman-java project.
+
+     % cd ${PROJECT_ROOT}
+  
+  3) From the project root, execute an ant build specifying the 'dist'
+     target.
+
+     % ant dist
+   
+  4) When the build has completed, the jar file will be placed in the
+     ${PROJECT_ROOT}/dist/lib directory and will be called
+     gearman-java-${version}.jar (where ${version} represents the 
+     current version number).
+
+- How to build and run the regression suite
+
+  1) Follow the steps used to build the project jar file (see above).
+
+  2) Make sure that you jave JUnit 4.6 on your system and preferably on your
+     class path.
+
+  3) Start an instance of the gearmand server running on your localhost and
+     listening on the default port.
+     
+     % ${PATH_TO_GEARMAND_BIN_DIR}/gearmand &
+
+  4) From the project root, execute an ant build specifying the 'test' target.
+
+     % ant test
+
+     Note, if you do not have JUnit 4.6 on your class path, when you start
+     the ant build you will need to specify the location of the JUnit jar file
+     via the junit.jar property as shown below.
+
+     % ant -Djunit.jar ${PATH_TO_JUNIT46_JAR} test
+
+- How to use the example reverseFunction and reverseClient to reverse a 
+  String.
+
+  1) Start a Gearman Job Server running on your localhost and listening on 
+     the default port.
+
+     % ${PATH_TO_GEARMAND_BIN_DIR}/gearmand &
+
+  2) Start the example reverse worker in a Java VM and background the job.
+
+     % java -cp <PATH_TO_GEARMAN_JAVA_JAR> org.gearman.example.WorkerRunner \
+       org.gearman.example.ReverseFunction &
+
+  3) Execute the example reverse client, passing in the string you want to
+     reverse.
+
+     % java -cp <PATH_TO_GEARMAN_JAVA_JAR> org.gearman.example.ReverseClient \
+       "hello world"
+
+- For more examples on how to use gearman-java, see 
+ ${PROJECT_ROOT}/src/org/gearman/examples. The following examples are worth
+ noting:
+
+ -ReverseClient.java: Shows how to create an instance of client, submit a job,
+  and retrieve the job's results.
+
+ -ReverseFunction.java: Shows how to implement your own function.
+
+ -WorkerRunner.java: Shows how to create an instance of a worker and have it
+  process jobs from a job server.
+
+== CONTRIBUTORS ==
+
+- Robert Stewart
+
+- Eric Herman
+
+- Trond Norbye
+
+- Eric Day
+
+- Eric Lambert
+
+== CONTACT INFO ==
+
+- You can learn more about the gearman-java or contact the developers of this
+  project at our launchpad portal.
+
+  https://launchpad.net/gearman-java
+
+- You can learn more about gearman at the gearman site.
+
+  http://gearman.org
+
