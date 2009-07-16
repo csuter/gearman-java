@@ -123,7 +123,7 @@ public class GearmanClientJobExecTest {
         public GearmanJobResult executeFunction() throws Exception {
             while (keepRunning) {
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(100);
                 } catch (InterruptedException ie) {
                 }
             }
@@ -276,9 +276,9 @@ public class GearmanClientJobExecTest {
                     null, null);
             gc.submit(job);
             boolean hasHitRunning = false;
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(100);
                 } catch (InterruptedException ie) {
                 }
                 status = gc.getJobStatus(job);
