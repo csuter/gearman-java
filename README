@@ -4,7 +4,20 @@ A "pure java" implementation of the Gearman "client" and "worker" interfaces.
 
 For the time being, portions of this library are licensed under the LGPL
 license while other portions are licensed under BSD. We seek to rectify
-this 'mix of licenses' in very near future.
+this 'mix of licenses' in the very near future.
+
+== KNOWN ISSUES ==
+
+- Performance. Performance is significantly slower than the C library. We will
+  be addressing this soon.
+
+- Memory leak in GearmanClientImpl.  When submitting an attached job, if you
+  do not call selectUpdateJobsEvents() method on a semi-regular basis, the 
+  client will leak memory. To work around this, call selectUpdateJobEvents()
+  after a job is reported as done.
+
+- Client and Worker will not attempt to re-establish connection to server if
+  the connection drops.
 
 == RUNTIME REQUIREMENTS ==
 
@@ -109,7 +122,7 @@ this 'mix of licenses' in very near future.
 
 == CONTACT INFO ==
 
-- You can learn more about the gearman-java or contact the developers of this
+- You can learn more about gearman-java or contact the developers of this
   project at our launchpad portal.
 
   https://launchpad.net/gearman-java
