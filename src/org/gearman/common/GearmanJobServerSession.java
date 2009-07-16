@@ -296,11 +296,13 @@ public class GearmanJobServerSession
                 }
                 break;
             case NOOP:
-                taskType = task.getRequestPacket().getPacketType();
-                if (taskType.equals(GearmanPacketType.PRE_SLEEP)) {
-                    task.handleGearmanIOEvent(p);
-                } else {
-                    return;
+                if (task != null) {
+                    taskType = task.getRequestPacket().getPacketType();
+                    if (taskType.equals(GearmanPacketType.PRE_SLEEP)) {
+                        task.handleGearmanIOEvent(p);
+                    } else {
+                        return;
+                    }
                 }
                 break;
             case JOB_ASSIGN:
@@ -353,13 +355,15 @@ public class GearmanJobServerSession
                 return;
         }
 
-        if (task.getState().compareTo(GearmanTask.State.SUBMITTED) > 0) {
-            tasksAwaitingAckList.remove();
-        } else {
-            LOG.log(Level.WARNING, "Task " + task + " still in submitted " +
-                    "state after receiving acknowlegement from server. " +
-                    "Ack = " + p);
+        if (task != null ) {
+            if (task.getState().compareTo(GearmanTask.State.SUBMITTED) > 0) {
+                tasksAwaitingAckList.remove();
+            } else {
+                LOG.log(Level.WARNING, "Task " + task + " still in submitted " +
+                        "state after receiving acknowlegement from server. " +
+                        "Ack = " + p);
 
+            }
         }
 
     }
