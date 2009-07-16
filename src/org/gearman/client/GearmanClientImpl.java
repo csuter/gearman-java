@@ -279,13 +279,23 @@ public class GearmanClientImpl
                 "execution of non-GearmanJob objects");
     }
 
-    public <T> List<Future<T>> invokeAll(Collection<Callable<T>> tasks)
+    // NOTE, there is a subtle difference between the ExecutorService invoke*
+    // method signatures in jdk1.5 and jdk1.6 that requires we implement these
+    // methods in their 'erasure' format (that is without the use of the
+    // specified generic types), otherwise we will not be able to compile this
+    // class using both compilers.
+    
+    @SuppressWarnings("unchecked")
+    public List invokeAll(Collection tasks)
             throws InterruptedException {
-        ArrayList<Future<T>> futures = new ArrayList<Future<T>>();
-        for (Callable<T> curTask : tasks) {
+        ArrayList<Future> futures = new ArrayList<Future>();
+
+        Iterator<Callable<Future>> iter = tasks.iterator();
+        while (iter.hasNext()) {
+            Callable<Future> curTask = iter.next();
             futures.add(this.submit(curTask));
         }
-        for (Future<T> results : futures) {
+        for (Future results : futures) {
             try {
                 results.get();
             } catch (ExecutionException ee) {
@@ -295,17 +305,20 @@ public class GearmanClientImpl
         return futures;
     }
 
-    public <T> List<Future<T>> invokeAll(Collection<Callable<T>> tasks,
+    @SuppressWarnings("unchecked")
+    public List invokeAll(Collection tasks,
             long timeout, TimeUnit unit) throws InterruptedException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public <T> T invokeAny(Collection<Callable<T>> tasks)
+    @SuppressWarnings("unchecked")
+    public Future invokeAny(Collection tasks)
             throws InterruptedException, ExecutionException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public <T> T invokeAny(Collection<Callable<T>> tasks, long timeout,
+    @SuppressWarnings("unchecked")
+    public Future invokeAny(Collection tasks, long timeout,
             TimeUnit unit) throws InterruptedException, ExecutionException,
             TimeoutException {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -393,7 +406,7 @@ public class GearmanClientImpl
                 updatedJobs.add(p);
                 JobHandle handle = new JobHandle(p.getDataComponentValue(
                         GearmanPacket.DataComponentName.JOB_HANDLE));
-                GearmanJobImpl job = (GearmanJobImpl) jobsMaps.get(handle);
+                GearmanJobImpl job = jobsMaps.get(handle);
                 if (job != null) {
                     job.handleEvent(p);
                 }

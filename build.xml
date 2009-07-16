@@ -59,7 +59,9 @@
     <!-- build it -->
     <target name="compile" depends="init">
         <javac srcdir="${src.dir}" destdir="${build.classes.dir}" debug="true">
-        	<compilerarg value="-Xlint"/>
+                <!--Turned off checked warnings for now, because GearmanClientImpl will fail -->
+                <!--to compile with warnings even though we are using @supprress annotation -->
+        	<compilerarg value="-Xlint:-unchecked"/>
         </javac>
     </target>
 
