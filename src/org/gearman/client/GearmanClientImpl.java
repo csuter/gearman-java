@@ -143,8 +143,7 @@ public class GearmanClientImpl
                 ioAvailable = Selector.open();
             }
 
-            session.initSession(ioAvailable,
-                    SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
+            session.initSession(ioAvailable, this);
             SelectionKey key = session.getSelectionKey();
             sessionsMap.put(key, session);
         } catch (IOException ioe) {
@@ -579,8 +578,7 @@ public class GearmanClientImpl
         int s = (int) Math.round((Math.random() * (sessions.size() - 1)));
         GearmanJobServerSession session = sessions.get(s);
         if (!session.isInitialized()) {
-            session.initSession(ioAvailable,
-                    SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
+            session.initSession(ioAvailable, this);
             SelectionKey key = session.getSelectionKey();
             sessionsMap.put(key, session);
         }

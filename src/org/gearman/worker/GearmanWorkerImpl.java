@@ -14,11 +14,9 @@ import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +43,6 @@ public class GearmanWorkerImpl
     }
     private static final String DESCRIPION_PREFIX = "GearmanWorker";
     private final String DESCRIPTION;
-    private ArrayList<GearmanJobServerSession> sessionList = null;
     private LinkedList<GearmanFunction> functionList = null;
     private Selector ioAvailable = null;
     private static final Logger LOG = Logger.getLogger(
@@ -55,6 +52,7 @@ public class GearmanWorkerImpl
     private State state;
     private ExecutorService executorService;
     private HashMap<GearmanJobServerSession, GearmanTask> taskMap = null;
+    private HashMap<SelectionKey,GearmanJobServerSession> sessionMap = null;
 
     class GrabJobEventHandler implements GearmanServerResponseHandler {
 
@@ -132,13 +130,13 @@ public class GearmanWorkerImpl
     //variants of the Execute services, we will open this up
     private GearmanWorkerImpl(ExecutorService executorService) {
         DESCRIPTION = DESCRIPION_PREFIX + ":" + Thread.currentThread().getId();
-        sessionList = new ArrayList<GearmanJobServerSession>();
         functionList = new LinkedList<GearmanFunction>();
         id = DESCRIPTION;
         functionMap = new HashMap<String, FunctionDefinition>();
         state = State.IDLE;
         this.executorService = executorService;
         taskMap = new HashMap<GearmanJobServerSession, GearmanTask>();
+        sessionMap = new HashMap<SelectionKey, GearmanJobServerSession>();
     }
 
     @Override
@@ -155,7 +153,27 @@ public class GearmanWorkerImpl
         state = State.RUNNING;
         while (isRunning()) {
 
-            for (GearmanJobServerSession sess : sessionList) {
+            for (GearmanJobServerSession sess : sessionMap.values()) {
+                int interestOps = SelectionKey.OP_READ;
+                if (sess.sessionHasDataToWrite()) {
+                    interestOps |= SelectionKey.OP_WRITE;
+                }
+                sess.getSelectionKey().interestOps(interestOps);
+            }
+            try {
+                ioAvailable.select(1);
+            } catch (IOException io) {
+                LOG.log(Level.WARNING, "Receieved IOException while" +
+                        " selecting for IO",io);
+            }
+
+             for (SelectionKey key : ioAvailable.selectedKeys()) {
+                 GearmanJobServerSession sess = sessionMap.get(key);
+                 if (sess == null) {
+                     LOG.log(Level.WARNING,"Worker does not have " +
+                             "session for key " + key);
+                     continue;
+                 }
                 if (!sess.isInitialized()) {
                     continue;
                 }
@@ -167,9 +185,9 @@ public class GearmanWorkerImpl
                                 new GearmanPacketImpl(GearmanPacketMagic.REQ,
                                 GearmanPacketType.GRAB_JOB, new byte[0]));
                         taskMap.put(sess, sessTask);
-                        LOG.log(Level.FINE,"Worker: " + this + " submitted a" +
+                        LOG.log(Level.FINER,"Worker: " + this + " submitted a " +
                                 sessTask.getRequestPacket().getPacketType() +
-                                "to session: " + sess);
+                                " to session: " + sess);
                     }
                     if (sessTask.getState().equals(GearmanTask.State.NEW)) {
                         sess.submitTask(sessTask);
@@ -188,22 +206,6 @@ public class GearmanWorkerImpl
                     continue;
                 }
             }
-
-            boolean shouldSleep = true;
-            for (GearmanJobServerSession sess : sessionList) {
-                GearmanTask sessTask = taskMap.get(sess);
-                if (sessTask == null ||
-                        !(sessTask.getRequestPacket().getPacketType().equals(
-                        GearmanPacketType.PRE_SLEEP))) {
-                    shouldSleep = false;
-                }
-            }
-            if (shouldSleep) {
-                try {
-                    Thread.currentThread().sleep(250);
-                } catch (InterruptedException ignore) {
-                }
-            }
         }
 
         shutDownWorker(true);
@@ -215,7 +217,7 @@ public class GearmanWorkerImpl
         GearmanJobServerSession s = event.getSession();
         GearmanPacketType t = p.getPacketType();
         LOG.log(Level.FINER,"Worker " + this + " handling session event" +
-                " (Session = " + s + " Event = " + t);
+                " ( Session = " + s + " Event = " + t + " )");
         switch (t) {
             case JOB_ASSIGN:
                 taskMap.remove(s);
@@ -248,16 +250,14 @@ public class GearmanWorkerImpl
 
         //this is a sub-optimal way to look for dups, but addJobServer
         //ops should be infrequent enough that this should be a big penalty
-        Iterator<GearmanJobServerSession> iter = sessionList.iterator();
-        while (iter.hasNext()) {
-            if (iter.next().getConnection().equals(conn)) {
+        for (GearmanJobServerSession sess : sessionMap.values()) {
+            if (sess.getConnection().equals(conn)) {
                 return;
             }
         }
 
         GearmanJobServerSession session =
                 new GearmanJobServerSession(conn);
-        sessionList.add(session);
         if (ioAvailable == null) {
             try {
                 ioAvailable = Selector.open();
@@ -266,11 +266,18 @@ public class GearmanWorkerImpl
             }
         }
         try {
-            session.initSession(ioAvailable,
-                    SelectionKey.OP_READ | SelectionKey.OP_WRITE, this);
+            session.initSession(ioAvailable, this);
         } catch (IOException ioe) {
             throw new IORuntimeException(ioe);
         }
+        SelectionKey key = session.getSelectionKey();
+        if (key == null) {
+            String msg = "Session " + session + " has a null " +
+                    "selection key. Server will not be added to worker.";
+            LOG.log(Level.WARNING, msg);
+            throw new IllegalStateException(msg);
+        }
+        sessionMap.put(key, session);
 
         GearmanPacket p = new GearmanPacketImpl(GearmanPacketMagic.REQ,
                 GearmanPacketType.SET_CLIENT_ID, ByteUtils.toUTF8Bytes(id));
@@ -281,19 +288,18 @@ public class GearmanWorkerImpl
             session.submitTask(new GearmanTask(p));
         }
 
-        if (isRunning()) {
-            p = new GearmanPacketImpl(GearmanPacketMagic.REQ,
-                    GearmanPacketType.GRAB_JOB, new byte[0]);
-            GearmanTask gsr = new GearmanTask(
-                    new GrabJobEventHandler(session), p);
-            session.submitTask(gsr);
-        }
+        p = new GearmanPacketImpl(GearmanPacketMagic.REQ,
+                GearmanPacketType.GRAB_JOB, new byte[0]);
+        GearmanTask gsr = new GearmanTask(
+                new GrabJobEventHandler(session), p);
+        taskMap.put(session, gsr);
+        
         LOG.log(Level.FINE, "Added server " + conn + " to worker " + this);
     }
 
     public boolean hasServer(GearmanJobServerConnection conn) {
         boolean foundIt = false;
-        for (GearmanJobServerSession sess : sessionList) {
+        for (GearmanJobServerSession sess : sessionMap.values()) {
             if (sess.getConnection().equals(conn)) {
                 foundIt = true;
             }
@@ -425,7 +431,7 @@ public class GearmanWorkerImpl
         } else {
             gsr = new GearmanTask(handler, p);
         }
-        for (GearmanJobServerSession sess : sessionList) {
+        for (GearmanJobServerSession sess : sessionMap.values()) {
             sess.submitTask(gsr);
         }
 
@@ -449,7 +455,7 @@ public class GearmanWorkerImpl
             }
         }
 
-        for (GearmanJobServerSession sess : sessionList) {
+        for (GearmanJobServerSession sess : sessionMap.values()) {
             sess.closeSession();
         }
         state = State.IDLE;

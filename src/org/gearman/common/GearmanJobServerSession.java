@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gearman.client.GearmanClientImpl;
 import org.gearman.client.GearmanIOEventListener;
 
 public class GearmanJobServerSession
@@ -48,8 +47,7 @@ public class GearmanJobServerSession
         return DESCRIPTION;
     }
 
-    public void initSession(Selector sel, int mask,
-            GearmanSessionEventHandler handler)
+    public void initSession(Selector sel, GearmanSessionEventHandler handler)
             throws IllegalStateException, IOException {
         if (isInitialized()) {
             throw new IllegalStateException("A session can not be " +
@@ -57,7 +55,8 @@ public class GearmanJobServerSession
         }
         connection.open();
         packetsToWrite = new LinkedList<GearmanPacket>();
-        sessionSelectionKey = connection.registerSelector(sel, mask);
+        sessionSelectionKey = connection.registerSelector(sel,
+                SelectionKey.OP_READ);
         this.responseHandler = handler;
         newTaskList = new LinkedList<GearmanTask>();
         tasksAwaitingAckList = new LinkedList<GearmanTask>();
@@ -151,6 +150,8 @@ public class GearmanJobServerSession
 
         newTaskList.add(task);
         packetsToWrite.add(task.getRequestPacket());
+        sessionSelectionKey.interestOps(sessionSelectionKey.interestOps() |
+                SelectionKey.OP_WRITE);
         LOG.log(Level.FINER, "Session " + this + " is now handling " +
                 "the task " + task);
     }
@@ -183,6 +184,9 @@ public class GearmanJobServerSession
                 connection.write(p);
                 handleSessionEvent(new GearmanSessionEvent(p, this));
             }
+        }
+        if (!sessionHasDataToWrite()) {
+            sessionSelectionKey.interestOps(SelectionKey.OP_READ);
         }
 
         while (canRead()) {
@@ -238,6 +242,13 @@ public class GearmanJobServerSession
             throw new IllegalStateException("Session hasnt been initialized.");
         }
         return tasksAwaitingAckList.size() + newTaskList.size();
+    }
+
+    public boolean sessionHasDataToWrite() {
+        if (connection == null) {
+            return false;
+        }
+        return packetsToWrite.isEmpty() ? connection.hasBufferedWriteData() : true;
     }
 
     private void handleReqSessionEvent(GearmanSessionEvent event) {
@@ -395,11 +406,4 @@ public class GearmanJobServerSession
         return connection.canRead();
     }
 
-    private boolean sessionHasDataToWrite() {
-        if (connection == null) {
-            return false;
-        }
-        return packetsToWrite.isEmpty() ?
-            connection.hasBufferedWriteData() : true;
-    }
 }

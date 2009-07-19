@@ -60,7 +60,7 @@ public class GearmanJobServerSessionTest {
         //try and initialize using a remote that we can not connect to
         session = new GearmanJobServerSession(conn);
         try {
-            session.initSession(Selector.open(),0,null);
+            session.initSession(Selector.open(),null);
             Assert.fail("initSession call did not throw exception even " +
                     "though session can not connect to host");
         } catch (Throwable t) {
@@ -70,9 +70,9 @@ public class GearmanJobServerSessionTest {
         }
 
         ServerSocket s = new ServerSocket(Constants.GEARMAN_DEFAULT_TCP_PORT - 1);
-        session.initSession(Selector.open(),0,null);
+        session.initSession(Selector.open(),null);
         try {
-            session.initSession(Selector.open(),0,null);
+            session.initSession(Selector.open(),null);
             Assert.fail("initSession was called twice but did throw " +
                     "exception on second call");
         } catch (Throwable t) {
@@ -105,7 +105,7 @@ public class GearmanJobServerSessionTest {
                     t instanceof IllegalStateException);
         }
 
-        session.initSession(Selector.open(),0,null);
+        session.initSession(Selector.open(),null);
         session.closeSession();
         try {
             session.closeSession();
@@ -141,7 +141,7 @@ public class GearmanJobServerSessionTest {
 
         ServerSocket s = new ServerSocket(
                 Constants.GEARMAN_DEFAULT_TCP_PORT - 1);
-        session.initSession(Selector.open(),0,null);
+        session.initSession(Selector.open(),null);
         Assert.assertTrue(session.getSelectionKey() != null);
         try {
             SelectionKey key = session.getSelectionKey();
@@ -178,7 +178,7 @@ public class GearmanJobServerSessionTest {
 
         try {
             s = new ServerSocket(Constants.GEARMAN_DEFAULT_TCP_PORT - 1);
-            session.initSession(Selector.open(),0,null);
+            session.initSession(Selector.open(),null);
 
             try {
                 session.submitTask(null);
@@ -230,7 +230,7 @@ public class GearmanJobServerSessionTest {
                 exceptionThrown);
         try {
             s = new ServerSocket(Constants.GEARMAN_DEFAULT_TCP_PORT - 1);
-            session.initSession(Selector.open(),0,null);
+            session.initSession(Selector.open(),null);
             session.submitTask(gsr);
             Assert.assertEquals("getNumberOfActiveTasks mis-matchs ",1,
                     session.getNumberOfActiveTasks());
