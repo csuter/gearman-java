@@ -12,6 +12,8 @@
     <property name="dist.jar" location="${dist.lib.dir}/${ant.project.name}-${project.version}.jar"/>
     <property name="api.pkg" value="org.gearman"/>
     <property name="pmd.home" value="${user.home}/.ant/lib/pmd"/>
+    <property name="findbugs.home" value="${user.home}/.ant/lib/findbugs"/>
+
     <path id="build.classpath">
         <pathelement location="${build.classes.dir}" />
     </path>
@@ -25,6 +27,12 @@
         <pathelement path="${pmd.home}/lib/"/>
         <pathelement path="${java.class.path}"/>
         <pathelement path="lib/pmd/lib/"/>
+    </path>
+
+    <path id="findbugs.lib.search.path">
+        <pathelement path="${findbugs.home}/lib/"/>
+        <pathelement path="${java.class.path}"/>
+        <pathelement path="lib/findbugs/lib/"/>
     </path>
 
     <target name="-check_pmd" description="Check that pmd jar files are present">
@@ -49,20 +57,48 @@
         <echo message="PMD finished, found ${pmd.num.warnings} warnings, see build/pmd/pmd_report.html"/>
     </target>
 
+    <target name="-check_findbugs" description="Check that findbugs jar files are present">
+        <available file="findbugs.jar" type="file" property="findbugs.jar.present">
+            <filepath refid="findbugs.lib.search.path"/>
+        </available>
+        <fail unless="findbugs.jar.present" message="Could not find findbugs.jar"/>
+
+        <available file="findbugs-ant.jar" type="file" property="findbugs-ant.jar.present">
+            <filepath refid="findbugs.lib.search.path"/>
+        </available>
+        <fail unless="findbugs-ant.jar.present" message="Could not find findbugs-ant.jar"/>
+    </target>
+
+    <target name="findbugs" depends="dist, -check_findbugs" description="Check the code with Findbugs">
+        <path id="findbugs.lib" >
+            <pathelement location="${findbugs.home}/lib/findbugs.jar"/>
+            <pathelement location="${findbugs.home}/lib/findbugs-ant.jar"/>
+        </path>
+        <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpathref="findbugs.lib"/>
+        <mkdir dir="build/findbugs"/>
+        <findbugs projectname="${ant.project.name}-${project.version}" home="${findbugs.home}" output="xml" outputFile="build/findbugs/findbugs.xml">
+            <sourcePath path="src" />
+            <class location="${dist.jar}" />
+        </findbugs>
+    </target>
+
+
     <target name="usage">
         <echo message="Build the ${ant.project.name} project."/>
         <echo message=""/>
         <echo message="This build system support the follow targets:"/>
         <echo message=""/>
-        <echo message="help:    display this help message."/>
+        <echo message="help:     display this help message."/>
         <echo message=""/>
-        <echo message="compile: builds the project source files."/>
+        <echo message="compile:  builds the project source files."/>
         <echo message=""/>
-        <echo message="dist:    generates the project jar file and javadocs."/>
+        <echo message="dist:     generates the project jar file and javadocs."/>
         <echo message=""/>
-        <echo message="test:    builds the jar file and testsuite. Runs the regression tests"/>
-        <echo message="         against the built jar. Requires Junit 4.6 to be on classpath"/>
-        <echo message="         or specified via the junit.jar property (-Djunit.jar)"/>
+        <echo message="findbugs: generates the project jar file and runs findbugs."/>
+        <echo message=""/>
+        <echo message="test:     builds the jar file and testsuite. Runs the regression tests"/>
+        <echo message="          against the built jar. Requires Junit 4.6 to be on classpath"/>
+        <echo message="          or specified via the junit.jar property (-Djunit.jar)"/>
         <echo message=""/>
         <echo message="pmd:     builds the jar file and run pmd scan"/>
         <echo message=""/>
