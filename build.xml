@@ -13,6 +13,7 @@
     <property name="api.pkg" value="org.gearman"/>
     <property name="pmd.home" value="${user.home}/.ant/lib/pmd"/>
     <property name="findbugs.home" value="${user.home}/.ant/lib/findbugs"/>
+    <property name="checkstyle.home" value="${user.home}/.ant/lib/checkstyle"/>
 
     <path id="build.classpath">
         <pathelement location="${build.classes.dir}" />
@@ -33,6 +34,12 @@
         <pathelement path="${findbugs.home}/lib/"/>
         <pathelement path="${java.class.path}"/>
         <pathelement path="lib/findbugs/lib/"/>
+    </path>
+
+    <path id="checkstyle.lib.search.path">
+        <pathelement path="${checkstyle.home}/"/>
+        <pathelement path="${java.class.path}"/>
+        <pathelement path="lib/checkstyle/lib/"/>
     </path>
 
     <target name="-check_pmd" description="Check that pmd jar files are present">
@@ -82,6 +89,21 @@
         </findbugs>
     </target>
 
+    <target name="-check_checkstyle" description="Check that checkstyle jar files are present">
+        <available file="checkstyle-all.jar" type="file" property="checkstyle.jar.present">
+            <filepath refid="checkstyle.lib.search.path"/>
+        </available>
+        <fail unless="checkstyle.jar.present" message="Please install checkstyle-all.jar in lib-directory  (or in ant classpath) to run Checkstyle, see README."/>
+    </target>
+
+    <target name="checkstyle" depends="compile, -check_checkstyle" description="Check the style with Checkstyle">
+        <taskdef resource="checkstyletask.properties" classpath="${checkstyle.home}/checkstyle-all.jar"/>
+        <mkdir dir="build/checkstyle"/>
+        <checkstyle config="tools/checkstyle/ruleset.xml" failOnViolation="false">
+            <fileset dir="src" includes="**/*.java"/>
+            <formatter type="xml" toFile="build/checkstyle/errors.xml"/>
+        </checkstyle>
+    </target>
 
     <target name="usage">
         <echo message="Build the ${ant.project.name} project."/>
