@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -70,7 +69,6 @@ public class GearmanClientImpl
     private final String DESCRIPTION;
     private HashMap<SelectionKey, GearmanJobServerSession> sessionsMap = null;
     private Selector ioAvailable = null;
-    private ArrayList<GearmanPacket> updatedJobs = null;
     private static final Logger LOG = Logger.getLogger(
             Constants.GEARMAN_CLIENT_LOGGER_NAME);
     private state runState = state.RUNNING;
@@ -125,7 +123,6 @@ public class GearmanClientImpl
      */
     public GearmanClientImpl() {
         sessionsMap = new HashMap<SelectionKey, GearmanJobServerSession>();
-        updatedJobs = new ArrayList<GearmanPacket>();
         jobsMaps = new HashMap<JobHandle, GearmanJobImpl>();
         submitJobMap = new HashMap<GearmanJobServerSession, GearmanJobImpl>();
         DESCRIPTION = new String(DESCRIPION_PREFIX + ":" +
@@ -372,27 +369,6 @@ public class GearmanClientImpl
         return handler.getResults();
     }
 
-    @SuppressWarnings(value = "unchecked")
-    public Collection<GearmanPacket> selectUpdatedJobEvents() throws
-            GearmanException, IllegalStateException {
-        if (!runState.equals(state.RUNNING)) {
-            throw new IllegalStateException("Client is not active");
-        }
-        Collection<GearmanPacket> retSet = new HashSet<GearmanPacket>();
-        try {
-            driveClientIO();
-        } catch (IOException ioe) {
-            LOG.log(Level.WARNING, "Encountered IOException while driving " +
-                    "client IO" + ioe);
-            //TODO improve ioexception handling
-        }
-        if (!updatedJobs.isEmpty()) {
-            retSet = (Collection<GearmanPacket>) updatedJobs.clone();
-            updatedJobs.clear();
-        }
-        return retSet;
-    }
-
     public int getNumberofActiveJobs() throws IllegalStateException {
         if (runState.equals(state.TERMINATED)) {
             throw new IllegalStateException("Client is not active");
@@ -410,7 +386,6 @@ public class GearmanClientImpl
                 GearmanJobImpl sjob = submitJobMap.get(s);
                 if (!sjob.isBackgroundJob()) {
                     jobsMaps.put(new JobHandle(sjob.getHandle()), sjob);
-                    updatedJobs.add(p);
                 }
                 break;
             case WORK_DATA:
@@ -419,7 +394,6 @@ public class GearmanClientImpl
             case WORK_COMPLETE:
             case WORK_FAIL:
             case WORK_EXCEPTION:
-                updatedJobs.add(p);
                 JobHandle handle = new JobHandle(p.getDataComponentValue(
                         GearmanPacket.DataComponentName.JOB_HANDLE));
                 GearmanJobImpl job = jobsMaps.get(handle);
@@ -492,8 +466,6 @@ public class GearmanClientImpl
         }
         sessionsMap.clear();
         sessionsMap = null;
-        updatedJobs.clear();
-        updatedJobs = null;
         runState = state.TERMINATED;
         LOG.log(Level.FINE, "Completed shutdown of client: " + this);
         return new ArrayList<Runnable>();

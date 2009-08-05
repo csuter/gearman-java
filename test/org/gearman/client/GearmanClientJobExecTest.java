@@ -12,8 +12,6 @@ import junit.framework.Assert;
 import org.gearman.common.GearmanPacketType;
 import org.gearman.util.ByteUtils;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -160,6 +158,23 @@ public class GearmanClientJobExecTest {
         }
     }
 
+    class IncrementalListener implements GearmanIOEventListener {
+
+        private StringBuffer sb = new StringBuffer();
+        public void handleGearmanIOEvent(GearmanPacket event) 
+                throws IllegalArgumentException {
+            if (!event.getPacketType().equals(GearmanPacketType.WORK_DATA)) {
+                return;
+            }
+            sb.append(ByteUtils.fromUTF8Bytes((event.getDataComponentValue(
+                        GearmanPacket.DataComponentName.DATA))));
+        }
+        public String getResults() {
+            return sb.toString();
+        }
+
+    }
+
     @Before
     public void initTest() throws IOException {
         gc = new GearmanClientImpl();
@@ -205,31 +220,17 @@ public class GearmanClientJobExecTest {
     public void incrementalAttachedJob()
             throws IOException, InterruptedException, ExecutionException {
             StringBuffer text = generateData(8193, "Hello World");
-            StringBuffer resultText = new StringBuffer();
             GearmanJob job = GearmanJobImpl.createJob(
                     incrementalReverseFunction.class.getCanonicalName(),
                     ByteUtils.toAsciiBytes(text.toString()), null);
+            IncrementalListener il = new IncrementalListener();
+            job.registerEventListener(il);
             gc.submit(job);
-            while (!job.isDone()) {
-                Collection<GearmanPacket> events = gc.selectUpdatedJobEvents();
-                for (GearmanPacket event : events) {
-                    if (!event.getPacketType().equals(GearmanPacketType.WORK_DATA)) {
-                        continue;
-                    }
-                    if (Arrays.equals(event.getDataComponentValue(
-                            GearmanPacket.DataComponentName.JOB_HANDLE),
-                            job.getHandle())) {
-                        resultText.append(ByteUtils.fromUTF8Bytes((
-                                event.getDataComponentValue(
-                                GearmanPacket.DataComponentName.DATA))));
-                    }
-                }
-            }
             GearmanJobResult result = job.get();
             Assert.assertTrue(result.jobSucceeded());
             Assert.assertTrue("Client reports active jobs even though all " +
                     "jobs have completed", gc.getNumberofActiveJobs() == 0);
-            String resultString = resultText.toString();
+            String resultString = il.getResults();
             Assert.assertTrue(resultString.equals(text.reverse().toString()));
     }
 
@@ -275,7 +276,7 @@ public class GearmanClientJobExecTest {
             boolean hasHitRunning = false;
             for (int i = 0; i < 5; i++) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(10);
                 } catch (InterruptedException ie) {
                 }
                 status = gc.getJobStatus(job);

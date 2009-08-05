@@ -6,13 +6,11 @@
 package org.gearman.client;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.gearman.common.GearmanJobServerConnection;
-import org.gearman.common.GearmanPacket;
 
 /**
  * This interface through which users of the Gearman Java Libaray will use to
@@ -104,22 +102,6 @@ public interface GearmanClient extends ExecutorService {
     void removeJobServer(GearmanJobServerConnection conn)
             throws IllegalArgumentException,
             IllegalStateException;
-
-    /**
-     * As {@link GearmanJob} are submitted and executed, they will receive
-     * notifications from the Gearman Job Server as certain packets are received
-     * (such as JOB_COMPLETE or WORK_DATA). Users may want to process these
-     * packets,for example if jobs are sending back intermediate data, a user
-     * may wish to receive that data and act upon it. This method returns to
-     * the user all events which have occured for any job submitted by the
-     * client.
-     *
-     * @return A collection of {@link GearmanPacket} that have been received.
-     *
-     * @throws IllegalStateException If the client has already been stopped.
-     */
-    Collection<GearmanPacket> selectUpdatedJobEvents()
-            throws IllegalStateException;
 
     /**
      * Sends a WORK_STATUS request to the Gearman Job Server running the
