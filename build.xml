@@ -11,6 +11,7 @@
     <property name="dist.docs.dir" location="${dist.dir}/docs" />
     <property name="dist.jar" location="${dist.lib.dir}/${ant.project.name}-${project.version}.jar"/>
     <property name="api.pkg" value="org.gearman"/>
+    <property name="pmd.home" value="${user.home}/.ant/lib/pmd"/>
     <path id="build.classpath">
         <pathelement location="${build.classes.dir}" />
     </path>
@@ -19,6 +20,34 @@
         <pathelement location="${build.tests.dir}"/>
         <pathelement location="${junit.jar}" />
     </path>
+
+    <path id="pmd.lib.search.path">
+        <pathelement path="${pmd.home}/lib/"/>
+        <pathelement path="${java.class.path}"/>
+        <pathelement path="lib/pmd/lib/"/>
+    </path>
+
+    <target name="-check_pmd" description="Check that pmd jar files are present">
+        <available file="pmd.jar" type="file" property="pmd.jar.present">
+            <filepath refid="pmd.lib.search.path"/>
+        </available>
+        <fail unless="pmd.jar.present" message="Please install pmd.jar in lib-directory  (or in ant classpath) to run PMD."/>
+    </target>
+
+    <target name="pmd" depends="compile, -check_pmd" description="Check the code with PMD">
+        <path id="pmd.lib" >
+            <pathelement location="${pmd.home}/lib/pmd.jar"/>
+            <pathelement location="${pmd.home}/lib/jaxen.jar"/>
+        </path>
+        <taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask" classpathref="pmd.lib"/>
+        <mkdir dir="build/pmd"/>
+        <pmd targetjdk="1.5" failuresPropertyName="pmd.num.warnings" rulesetfiles="tools/pmd/ruleset.xml">
+            <formatter type="html" toFile="build/pmd/report.html"/>
+            <formatter type="xml" toFile="build/pmd/report.xml"/>
+            <fileset dir="src" includes="**/*.java"/>
+        </pmd>
+        <echo message="PMD finished, found ${pmd.num.warnings} warnings, see build/pmd/pmd_report.html"/>
+    </target>
 
     <target name="usage">
         <echo message="Build the ${ant.project.name} project."/>
@@ -34,6 +63,8 @@
         <echo message="test:    builds the jar file and testsuite. Runs the regression tests"/>
         <echo message="         against the built jar. Requires Junit 4.6 to be on classpath"/>
         <echo message="         or specified via the junit.jar property (-Djunit.jar)"/>
+        <echo message=""/>
+        <echo message="pmd:     builds the jar file and run pmd scan"/>
         <echo message=""/>
         <echo message="clean:   removes the built classes, jar files and test results"/>
         <echo message=""/>
