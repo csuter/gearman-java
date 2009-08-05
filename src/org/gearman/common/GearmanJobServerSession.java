@@ -251,9 +251,16 @@ public class GearmanJobServerSession
         return packetsToWrite.isEmpty() ? connection.hasBufferedWriteData() : true;
     }
 
-    private void handleReqSessionEvent(GearmanSessionEvent event) {
+    private void handleReqSessionEvent(GearmanSessionEvent event) 
+            throws IllegalStateException {
         GearmanPacket p = event.getPacket();
         GearmanTask t = newTaskList.remove();
+        if (t == null) {
+            String msg = "Session has received  request event " + event.packet +
+                    " but has no task in new task queue.";
+            LOG.log(Level.SEVERE,msg);
+            throw new IllegalStateException(msg);
+        }
         t.handleGearmanIOEvent(p);
         GearmanTask.State state = t.getState();
         LOG.log(Level.FINER,"Session " + this + " handling a " +
@@ -261,6 +268,9 @@ public class GearmanJobServerSession
         switch (state) {
             case SUBMITTED:
                 tasksAwaitingAckList.add(t);
+                LOG.log(Level.FINE,"Added task " + t.getRequestPacket().getPacketType() +
+                        " to taskAwaiting list. List size = " +
+                        tasksAwaitingAckList.size() + "( Event was " + p.getPacketType() + ")");
                 break;
             case FINISHED:
                 break;
@@ -369,6 +379,10 @@ public class GearmanJobServerSession
         if (task != null ) {
             if (task.getState().compareTo(GearmanTask.State.SUBMITTED) > 0) {
                 tasksAwaitingAckList.remove();
+                LOG.log(Level.FINE, "Removed task " + task.getRequestPacket().getPacketType() +
+                        " from taskAwaiting list. List size = " +
+                        tasksAwaitingAckList.size() + "( Event was " +
+                        event.packet.getPacketType() + ")");
             } else {
                 LOG.log(Level.WARNING, "Task " + task + " still in submitted " +
                         "state after receiving acknowlegement from server. " +

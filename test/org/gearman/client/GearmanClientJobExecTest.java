@@ -187,7 +187,7 @@ public class GearmanClientJobExecTest {
     @Test
     public void simpleAttachedJob()
             throws IOException, InterruptedException, ExecutionException {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             StringBuffer text = generateData(8193, "Hello World");
             GearmanJob job = GearmanJobImpl.createJob(
                     newReverseFunction.class.getCanonicalName(),
@@ -236,7 +236,7 @@ public class GearmanClientJobExecTest {
     @Test
     public void simpleAttachedJobBulk() throws IOException,
             InterruptedException, TimeoutException, ExecutionException {
-        int num = 10;
+        int num = 1000;
         int numCompleted = 0;
         StringBuffer text = generateData(8193, "Hello World");
         ArrayList <Future> futures = new ArrayList<Future>();
@@ -246,10 +246,10 @@ public class GearmanClientJobExecTest {
                     ByteUtils.toAsciiBytes(text.toString()),null);
             futures.add(gc.submit(job));
             Assert.assertTrue(job.getHandle() != null);
+            
         }
         String rtext = text.reverse().toString();
         for (Future<GearmanJobResult> curJob : futures) {
-            try {
             GearmanJobResult curRes = curJob.get(20, TimeUnit.SECONDS);
             numCompleted++;
             Assert.assertTrue(curRes.jobSucceeded());
@@ -258,9 +258,6 @@ public class GearmanClientJobExecTest {
                     gc.getNumberofActiveJobs() <= num - numCompleted);
             String resultString = ByteUtils.fromAsciiBytes(curRes.getResults());
             Assert.assertTrue(resultString.equals(rtext));
-            } catch (Exception e) {
-                System.out.println(e);
-            }
         }
     }
 
@@ -311,16 +308,6 @@ public class GearmanClientJobExecTest {
         }
     }
 
-//    //Long running test, ignore for now
-////    @Ignore
-////    public void manyDetachedJobsTest() throws IOException {
-////        for (int x = 0; x < 3000; x++) {
-////            GearmanJobImpl job = new GearmanJobImpl("reverse", new byte[0], true,
-////                    GearmanJobImpl.JobPriority.NORMAL);
-////            gc.submitJob(job);
-////        }
-////    }
-//
     private Thread startWorkerThread(Runnable r, String name) {
         Thread t = new Thread(r, name);
         t.start();

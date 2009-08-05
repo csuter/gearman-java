@@ -185,12 +185,10 @@ public class GearmanWorkerImpl
                                 new GearmanPacketImpl(GearmanPacketMagic.REQ,
                                 GearmanPacketType.GRAB_JOB, new byte[0]));
                         taskMap.put(sess, sessTask);
+                        sess.submitTask(sessTask);
                         LOG.log(Level.FINER,"Worker: " + this + " submitted a " +
                                 sessTask.getRequestPacket().getPacketType() +
                                 " to session: " + sess);
-                    }
-                    if (sessTask.getState().equals(GearmanTask.State.NEW)) {
-                        sess.submitTask(sessTask);
                     }
                     sess.driveSessionIO();
                     //For the time being we will execute the jobs synchronously
@@ -231,9 +229,11 @@ public class GearmanWorkerImpl
                 taskMap.remove(s);
                 break;
             case NO_JOB:
-                taskMap.put(s, new GearmanTask(new GrabJobEventHandler(s),
+                GearmanTask preSleepTask = new GearmanTask(new GrabJobEventHandler(s),
                         new GearmanPacketImpl(GearmanPacketMagic.REQ,
-                        GearmanPacketType.PRE_SLEEP, new byte[0])));
+                        GearmanPacketType.PRE_SLEEP, new byte[0]));
+                taskMap.put(s, preSleepTask);
+                s.submitTask(preSleepTask);
                 break;
             case ECHO_RES:
                 break;
@@ -293,6 +293,7 @@ public class GearmanWorkerImpl
         GearmanTask gsr = new GearmanTask(
                 new GrabJobEventHandler(session), p);
         taskMap.put(session, gsr);
+        session.submitTask(gsr);
         
         LOG.log(Level.FINE, "Added server " + conn + " to worker " + this);
     }

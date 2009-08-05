@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.Callable;
@@ -24,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanException;
 import org.gearman.common.GearmanJobServerConnection;
@@ -73,6 +76,21 @@ public class GearmanClientImpl
     private state runState = state.RUNNING;
     private HashMap<JobHandle, GearmanJobImpl> jobsMaps = null;
     private HashMap<GearmanJobServerSession, GearmanJobImpl> submitJobMap = null;
+    private Timer timer = new Timer();
+
+    private class Alarm extends TimerTask {
+
+        private AtomicBoolean timesUp = new AtomicBoolean(false);
+
+        @Override
+        public void run() {
+            timesUp.set(true);
+        }
+
+        public boolean hasFired() {
+            return timesUp.get();
+        }
+    }
 
     private class JobHandle {
 
@@ -246,7 +264,7 @@ public class GearmanClientImpl
         try {
             submitJobMap.put(session, job);
             if (!(driveRequestTillState(session,
-                    submittedJob, GearmanTask.State.RUNNING, 10))) {
+                    submittedJob, GearmanTask.State.RUNNING))) {
                 throw new RuntimeException("Timed out waiting for submission" +
                         " of " + job + " to complete");
             }
@@ -345,7 +363,7 @@ public class GearmanClientImpl
         LOG.log(Level.FINE, "Client " + this + " has submitted echo request " +
                 "(payload = " + ByteUtils.toHex(data) + " to session " +
                 session);
-        if (!driveRequestTillState(session, t, GearmanTask.State.FINISHED, 10)) {
+        if (!driveRequestTillState(session, t, GearmanTask.State.FINISHED)) {
             throw new GearmanException("Failed to execute echo request " + t +
                     " to session " + session);
         }
@@ -559,8 +577,7 @@ public class GearmanClientImpl
         GearmanTask t = new GearmanTask(
                 handler, statusRequest);
         session.submitTask(t);
-        if (!driveRequestTillState(session, t,
-                GearmanTask.State.FINISHED, 10)) {
+        if (!driveRequestTillState(session, t,GearmanTask.State.FINISHED)) {
             throw new GearmanException("Failed to execute jobstatus request " +
                     t + " to session " + session);
         }
@@ -586,19 +603,12 @@ public class GearmanClientImpl
     }
 
     private boolean driveRequestTillState(GearmanJobServerSession session,
-            GearmanTask r, GearmanTask.State state,
-            int attempts)
+            GearmanTask r, GearmanTask.State state)
             throws IOException, GearmanException {
-        while (r.getState().compareTo(state) < 0 && attempts != 0) {
+        Alarm alarm = new Alarm();
+        timer.schedule(alarm, 2000);
+        while (r.getState().compareTo(state) < 0 && !(alarm.hasFired())) {
             session.driveSessionIO();
-            if (attempts > 0) {
-                attempts--;
-            }
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException ie) {
-                break;
-            }
         }
         return r.getState().compareTo(state) >= 0;
     }
