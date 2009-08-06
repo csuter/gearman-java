@@ -1,0 +1,11 @@
+0.2 - 2009-08-06
+ * Significantly improved worker and client performance.
+ * Fixed bug #400466. (Client leaks memory when submitting attached jobs).
+   Removed method selectUpdatedJobEvents from GearmanClient.Java interface 
+   (and underlying implementations). There was no clean way to make this
+   method work without leaking memory. Users who wish to handle events can
+   still do so by simply attaching a listener to the job.
+ * Added build support for pmd, findbugs, checkstyle, and code coverage (emma).
+
+0.1 - 2009-07-16
+ * First release.

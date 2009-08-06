@@ -8,14 +8,6 @@ this 'mix of licenses' in the very near future.
 
 == KNOWN ISSUES ==
 
-- Performance. Performance is significantly slower than the C library. We will
-  be addressing this soon.
-
-- Memory leak in GearmanClientImpl.  When submitting an attached job, if you
-  do not call selectUpdateJobsEvents() method on a semi-regular basis, the 
-  client will leak memory. To work around this, call selectUpdateJobEvents()
-  after a job is reported as done.
-
 - Client and Worker will not attempt to re-establish connection to server if
   the connection drops.
 
