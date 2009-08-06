@@ -448,6 +448,7 @@ public class GearmanClientImpl
     public List<Runnable> shutdownNow() {
         runState = state.SHUTTINGDOWN;
         LOG.log(Level.FINE, "Commencing immediate shutdown of client: " + this);
+        timer.cancel();
         Iterator<GearmanJobServerSession> sessions =
                 sessionsMap.values().iterator();
         while (sessions.hasNext()) {
