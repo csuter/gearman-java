@@ -14,6 +14,8 @@
     <property name="pmd.home" value="${user.home}/.ant/lib/pmd"/>
     <property name="findbugs.home" value="${user.home}/.ant/lib/findbugs"/>
     <property name="checkstyle.home" value="${user.home}/.ant/lib/checkstyle"/>
+    <property name="emma.home" value="${user.home}/.ant/lib/emma"/>
+    <property name="coverage.dir" value="${build.dir}/emma"/>
 
     <path id="build.classpath">
         <pathelement location="${build.classes.dir}" />
@@ -40,6 +42,11 @@
         <pathelement path="${checkstyle.home}/"/>
         <pathelement path="${java.class.path}"/>
         <pathelement path="lib/checkstyle/lib/"/>
+    </path>
+
+    <path id="emma.lib" >
+        <pathelement location="${emma.home}/lib/emma.jar"/>
+        <pathelement location="${emma.home}/lib/emma_ant.jar"/>
     </path>
 
     <target name="-check_pmd" description="Check that pmd jar files are present">
@@ -105,6 +112,36 @@
         </checkstyle>
     </target>
 
+    <target name="-check_emma" description="Check that emma jar files are present">
+        <available file="${emma.home}/lib/emma.jar" type="file" property="emma.jar.present"/>
+        <fail unless="emma.jar.present" message="Could not find emma.jar"/>
+
+        <available file="${emma.home}/lib/emma_ant.jar" type="file" property="emma_ant.jar.present"/>
+        <fail unless="emma_ant.jar.present" message="Could not find emma_ant.jar"/>
+    </target>
+
+    <target name="emma-instrument" depends="compile, -check_emma" description="Instruments the source code for Emma code coverage analysis">
+        <taskdef resource="emma_ant.properties" classpathref="emma.lib"/>
+        <mkdir dir="${coverage.dir}" />
+        <emma enabled="true">
+            <instr instrpath="build/classes" metadatafile="${coverage.dir}/coverage.em"
+                   mode="overwrite" filter="+org.gearman.*,-org.gearman.example.*" destdir="${coverage.dir}" />
+        </emma>
+    </target>
+
+    <target name="emma-report" description="Analyze" depends="-check_emma">
+        <taskdef resource="emma_ant.properties" classpathref="emma.lib"/>
+        <emma enabled="true" >
+            <report sourcepath="${src.dir}">
+                <infileset dir="${coverage.dir}" includes="*.em, *.ec"/>
+                <xml outfile="${coverage.dir}/coverage.xml"/>
+                <html outfile="${coverage.dir}/index.html"/>
+            </report>
+        </emma>
+    </target>
+
+    <target name="code-coverage" depends="clean, emma-instrument, test, emma-report" description="Create test code coverage reports based on the unit tests"/>
+
     <target name="usage">
         <echo message="Build the ${ant.project.name} project."/>
         <echo message=""/>
@@ -123,6 +160,8 @@
         <echo message="          or specified via the junit.jar property (-Djunit.jar)"/>
         <echo message=""/>
         <echo message="pmd:     builds the jar file and run pmd scan"/>
+        <echo message=""/>
+        <echo message="code-coverage: Generate code coverage by running emma."/>
         <echo message=""/>
         <echo message="clean:   removes the built classes, jar files and test results"/>
         <echo message=""/>
@@ -190,9 +229,15 @@
     <!-- instance be running and listening on the default port.             -->
     <target name="test" depends="compileTests">
         <mkdir dir="${build.tests.dir}/results" />
-        <junit printsummary="true" failureproperty="junit.failure">
+        <junit printsummary="true" failureproperty="junit.failure" fork="yes">
             <formatter type="plain"/>
-            <classpath refid="test.classpath" />
+            <classpath>
+              <path refid="test.classpath"/>
+              <path refid="emma.lib"/>
+              <pathelement path="${java.class.path}"/>
+             </classpath>
+            <jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.ec" />
+            <jvmarg value="-Demma.coverage.out.merge=true" />
             <batchtest todir="${build.tests.dir}/results">
                 <fileset dir="${test.src.dir}">
                     <include name="**/*Test*.java" />
@@ -201,5 +246,6 @@
             </batchtest>
         </junit>
         <fail if="junit.failure" message="One or more unit tests failed. See ${build.tests.dir}/results for details."/>
+
     </target>
 </project>
