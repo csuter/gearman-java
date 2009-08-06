@@ -125,7 +125,7 @@ public class Bug400466Test {
             if (x % 100 == 0) {
                 memUsed = rt.totalMemory() - rt.freeMemory();
                 if (heapSizeCeiling == 0) {
-                    heapSizeCeiling = memUsed * 4;
+                    heapSizeCeiling = memUsed * 10;
                 } else {
                     Assert.assertTrue("ceiling = " + heapSizeCeiling +
                             " used = " + memUsed, memUsed < heapSizeCeiling);

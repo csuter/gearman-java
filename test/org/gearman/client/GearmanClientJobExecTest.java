@@ -181,13 +181,14 @@ public class GearmanClientJobExecTest {
         worker = new GearmanWorkerImpl();
         gc.addJobServer(new GearmanNIOJobServerConnection("localhost"));
 
-        //create a worker for each of the job servers
-        worker.addServer(new GearmanNIOJobServerConnection("localhost"));
-
         lrff = new longRunningFunctionFactory();
         worker.registerFunctionFactory(lrff);
         worker.registerFunctionFactory(new newReverseFunctionFactory());
         worker.registerFunctionFactory(new incrementalReverseFunctionFactory());
+
+        //create a worker for each of the job servers
+        worker.addServer(new GearmanNIOJobServerConnection("localhost"));
+
         runner = new WorkerRunnable(worker);
         wt = startWorkerThread(runner, "workerThread");
     }
