@@ -12,6 +12,7 @@
     <property name="dist.jar" location="${dist.lib.dir}/${ant.project.name}-${project.version}.jar"/>
     <property name="api.pkg" value="org.gearman"/>
     <property name="pmd.home" value="${user.home}/.ant/lib/pmd"/>
+    <property name="junit.jar" value="${user.home}/.ant/lib/junit.jar"/>
     <property name="findbugs.home" value="${user.home}/.ant/lib/findbugs"/>
     <property name="checkstyle.home" value="${user.home}/.ant/lib/checkstyle"/>
     <property name="emma.home" value="${user.home}/.ant/lib/emma"/>
@@ -230,6 +231,7 @@
     <target name="test" depends="compileTests">
         <mkdir dir="${build.tests.dir}/results" />
         <junit printsummary="true" failureproperty="junit.failure" fork="yes">
+            <formatter type="xml"/>
             <formatter type="plain"/>
             <classpath>
               <path refid="test.classpath"/>
