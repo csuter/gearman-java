@@ -2,6 +2,7 @@ bin
 build
 dist
 .classpath
+.DS_Store
 .project
 .settings
 nbbuild.xml

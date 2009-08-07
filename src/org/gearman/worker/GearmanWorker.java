@@ -39,12 +39,15 @@ public interface GearmanWorker {
      * @param conn {@link GearmanJobServerConnection} connected to the
      *          Gearman Job Server
      *
+     * @return returns true if a connection to the server was established and
+     *         the server was added to the worker, else false.
+     *
      * @throws IllegalArgumentException If an invalid connection has been
      *         specified.
      *
      * @throws IllegalStateException If the worker has already been stopped.
      */
-    void addServer(GearmanJobServerConnection conn);
+    boolean addServer(GearmanJobServerConnection conn);
 
     /**
      * Has a connection to the specified Gearman Job Server been registerd with

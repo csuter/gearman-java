@@ -8,7 +8,6 @@ package org.gearman.client;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import org.gearman.common.GearmanJobServerConnection;
 
@@ -30,7 +29,7 @@ import org.gearman.common.GearmanJobServerConnection;
  * passing a {@link GearmanJob} to either the
  * {@link GearmanClient#submit(java.util.concurrent.Callable) } or the
  * {@link GearmanClient#invokeAll(java.util.Collection) } methods. Both of
- * these methods return a {@link Future} object which can be used to track
+ * these methods return a {@link java.util.concurrent.Future} object which can be used to track
  * the state of that job.
  *
  * <p>
@@ -71,11 +70,14 @@ public interface GearmanClient extends ExecutorService {
      *
      * @param conn The connection to the Gearman Job Server.
      *
+     * @return returns true if a connection to the server was established and
+     *         the server was added to the client, else false.
+     *
      * @throws IllegalArgumentException If an invalid connection has been
      * specified.
      * @throws IllegalStateException If the client has already been stopped.
      */
-    void addJobServer(GearmanJobServerConnection conn)
+    boolean addJobServer(GearmanJobServerConnection conn)
             throws IllegalArgumentException, IllegalStateException;
 
     /**

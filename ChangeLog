@@ -1,3 +1,14 @@
+0.03 - 2009-XX-XX
+ * Cleanup findbugs, pmd, and checkstyle warnings
+ * Changed signature of the addServerMethod in GearmanClient and
+   GearmanWorker (as well as their implementations) to return a
+   boolean to indicate success or failure of attempt. Attmepts to
+   add a server that can not be contacted will now return false as
+   opposed to throwing a runtime exception.
+ * ClientImpl driveRequestTillState now drivesIO on all sessions that
+   are selected for IO instead of driving IO for only the session to
+   which the request belongs.
+
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.
  * Fixed bug #400466. (Client leaks memory when submitting attached jobs).

@@ -8,17 +8,16 @@ package org.gearman.client;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -26,19 +25,21 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanException;
 import org.gearman.common.GearmanJobServerConnection;
-import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanJobServerSession;
 import org.gearman.common.GearmanNIOJobServerConnection;
-import org.gearman.common.GearmanTask;
-import org.gearman.common.GearmanServerResponseHandler;
-import org.gearman.common.GearmanSessionEvent;
-import org.gearman.common.GearmanSessionEventHandler;
+import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanPacketImpl;
 import org.gearman.common.GearmanPacketMagic;
 import org.gearman.common.GearmanPacketType;
+import org.gearman.common.GearmanServerResponseHandler;
+import org.gearman.common.GearmanSessionEvent;
+import org.gearman.common.GearmanSessionEventHandler;
+import org.gearman.common.GearmanTask;
 import org.gearman.util.ByteUtils;
 
 //TODO change the server selection to use open connection
@@ -66,19 +67,21 @@ public class GearmanClientImpl
     }
 
     private static final String DESCRIPION_PREFIX = "GearmanClient";
-    private final String DESCRIPTION;
-    private HashMap<SelectionKey, GearmanJobServerSession> sessionsMap = null;
-    private Selector ioAvailable = null;
     private static final Logger LOG = Logger.getLogger(
             Constants.GEARMAN_CLIENT_LOGGER_NAME);
+    private static final String CLIENT_NOT_ACTIVE = "Client is not active";
+    private final String DESCRIPTION;
+    private Map<SelectionKey, GearmanJobServerSession> sessionsMap = null;
+    private Selector ioAvailable = null;
     private state runState = state.RUNNING;
-    private HashMap<JobHandle, GearmanJobImpl> jobsMaps = null;
-    private HashMap<GearmanJobServerSession, GearmanJobImpl> submitJobMap = null;
-    private Timer timer = new Timer();
+    private final Map<JobHandle, GearmanJobImpl> jobsMaps;
+    private final Map<GearmanJobServerSession, GearmanJobImpl> submitJobMap;
+    private final Timer timer = new Timer();
 
-    private class Alarm extends TimerTask {
 
-        private AtomicBoolean timesUp = new AtomicBoolean(false);
+    private static class Alarm extends TimerTask {
+
+        private final AtomicBoolean timesUp = new AtomicBoolean(false);
 
         @Override
         public void run() {
@@ -90,11 +93,11 @@ public class GearmanClientImpl
         }
     }
 
-    private class JobHandle {
+    private static class JobHandle {
 
         private final byte[] handle;
 
-        private JobHandle(byte[] handle) {
+        JobHandle(byte[] handle) {
             this.handle = new byte[handle.length];
             System.arraycopy(handle, 0, this.handle, 0, handle.length);
         }
@@ -125,13 +128,11 @@ public class GearmanClientImpl
         sessionsMap = new HashMap<SelectionKey, GearmanJobServerSession>();
         jobsMaps = new HashMap<JobHandle, GearmanJobImpl>();
         submitJobMap = new HashMap<GearmanJobServerSession, GearmanJobImpl>();
-        DESCRIPTION = new String(DESCRIPION_PREFIX + ":" +
-                Thread.currentThread().getId());
+        DESCRIPTION = DESCRIPION_PREFIX + ":" + Thread.currentThread().getId();
     }
 
-    public void addJobServer(GearmanJobServerConnection newconn)
-            throws IllegalArgumentException,
-            IllegalStateException {
+    public boolean addJobServer(GearmanJobServerConnection newconn)
+            throws IllegalArgumentException,IllegalStateException {
 
         //TODO remove this restriction
         if (!(newconn instanceof GearmanNIOJobServerConnection)) {
@@ -150,7 +151,9 @@ public class GearmanClientImpl
 
         GearmanJobServerSession session = new GearmanJobServerSession(conn);
         if (sessionsMap.values().contains(session)) {
-            return;
+            LOG.log(Level.FINE,"The server " + newconn + " was previously " +
+                    "added to the client. Ignoring add request.");
+            return true;
         }
 
         try {
@@ -162,10 +165,13 @@ public class GearmanClientImpl
             SelectionKey key = session.getSelectionKey();
             sessionsMap.put(key, session);
         } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
+            LOG.log(Level.WARNING,"Failed to connect to job server "
+                    + newconn + ".",ioe);
+            return false;
         }
 
         LOG.log(Level.FINE, "Added connection " + conn + " to client " + this);
+        return true;
     }
 
     public boolean hasConnection(GearmanJobServerConnection conn) {
@@ -180,7 +186,7 @@ public class GearmanClientImpl
     public List<GearmanJobServerConnection> getSetOfJobServers()
             throws IllegalStateException {
         if (!runState.equals(state.RUNNING)) {
-            throw new IllegalStateException("Client is not active");
+            throw new IllegalStateException(CLIENT_NOT_ACTIVE);
         }
 
         ArrayList<GearmanJobServerConnection> retSet =
@@ -222,7 +228,7 @@ public class GearmanClientImpl
     public <T> Future<T> submit(Callable<T> task) {
 
         if (task == null) {
-            throw new NullPointerException("Null task was submitted to " +
+            throw new IllegalStateException("Null task was submitted to " +
                     "gearman client");
         }
 
@@ -255,19 +261,19 @@ public class GearmanClientImpl
         GearmanTask submittedJob =
                 new GearmanTask(handler, submitRequest);
         session.submitTask(submittedJob);
-        LOG.log(Level.FINE, "Client " + this + " has submitted job " + job +
-                " to session " + session + ". Job has been added to the " +
+        LOG.log(Level.FINE, "Client " + this + " has submitted job " + job +    //NOPMD
+                " to session " + session + ". Job has been added to the " +     //NOPMD
                 "active job queue");
         try {
             submitJobMap.put(session, job);
-            if (!(driveRequestTillState(session,
-                    submittedJob, GearmanTask.State.RUNNING))) {
-                throw new RuntimeException("Timed out waiting for submission" +
-                        " of " + job + " to complete");
+            if (!(driveRequestTillState(submittedJob,
+                    GearmanTask.State.RUNNING))) {
+                throw new RejectedExecutionException("Timed out waiting for" +
+                        " submission of " + job + " to complete");
             }
         } catch (IOException ioe) {
             LOG.log(Level.WARNING, "Client " + this + " encounted an " +
-                    "IOException while drivingIO");
+                    "IOException while drivingIO",ioe);
         } finally {
             submitJobMap.remove(session);
         }
@@ -296,11 +302,9 @@ public class GearmanClientImpl
     // specified generic types), otherwise we will not be able to compile this
     // class using both compilers.
     
-    @SuppressWarnings("unchecked")
-    public List invokeAll(Collection tasks)
-            throws InterruptedException {
+    @SuppressWarnings("unchecked") //NOPMD
+    public List invokeAll(Collection tasks) throws InterruptedException {
         ArrayList<Future> futures = new ArrayList<Future>();
-
         Iterator<Callable<Future>> iter = tasks.iterator();
         while (iter.hasNext()) {
             Callable<Future> curTask = iter.next();
@@ -310,7 +314,8 @@ public class GearmanClientImpl
             try {
                 results.get();
             } catch (ExecutionException ee) {
-                //TODO
+                LOG.log(Level.WARNING,"Failed to execute task " +
+                        results + ".",ee);
             }
         }
         return futures;
@@ -349,7 +354,7 @@ public class GearmanClientImpl
 
     public byte[] echo(byte[] data) throws IOException, GearmanException {
         if (!runState.equals(state.RUNNING)) {
-            throw new IllegalStateException("Client is not active");
+            throw new IllegalStateException(CLIENT_NOT_ACTIVE);
         }
         GearmanPacket echoRequest = new GearmanPacketImpl(GearmanPacketMagic.REQ,
                 GearmanPacketType.ECHO_REQ,data);
@@ -360,7 +365,7 @@ public class GearmanClientImpl
         LOG.log(Level.FINE, "Client " + this + " has submitted echo request " +
                 "(payload = " + ByteUtils.toHex(data) + " to session " +
                 session);
-        if (!driveRequestTillState(session, t, GearmanTask.State.FINISHED)) {
+        if (!driveRequestTillState(t, GearmanTask.State.FINISHED)) {
             throw new GearmanException("Failed to execute echo request " + t +
                     " to session " + session);
         }
@@ -371,7 +376,7 @@ public class GearmanClientImpl
 
     public int getNumberofActiveJobs() throws IllegalStateException {
         if (runState.equals(state.TERMINATED)) {
-            throw new IllegalStateException("Client is not active");
+            throw new IllegalStateException(CLIENT_NOT_ACTIVE);
         }
         return jobsMaps == null ? 0 : jobsMaps.size();
     }
@@ -397,11 +402,15 @@ public class GearmanClientImpl
                 JobHandle handle = new JobHandle(p.getDataComponentValue(
                         GearmanPacket.DataComponentName.JOB_HANDLE));
                 GearmanJobImpl job = jobsMaps.get(handle);
-                if (job != null) {
+                if (job == null) {
+                    LOG.log(Level.WARNING,"Client received packet from server" +
+                            " for unknown job ( job_handle = " + handle +
+                            " packet = " + t +" )");
+                } else {
                     job.handleEvent(p);
-                }
-                if (job.isDone()) {
-                    jobsMaps.remove(handle);
+                    if (job.isDone()) {
+                        jobsMaps.remove(handle);
+                    }
                 }
                 break;
             case ERROR:
@@ -520,6 +529,13 @@ public class GearmanClientImpl
     }
 
     private void driveClientIO() throws IOException, GearmanException {
+        for (GearmanJobServerSession sess : sessionsMap.values()) {
+            int interestOps = SelectionKey.OP_READ;
+            if (sess.sessionHasDataToWrite()) {
+                interestOps |= SelectionKey.OP_WRITE;
+            }
+            sess.getSelectionKey().interestOps(interestOps);
+        }
         ioAvailable.selectNow();
         Set<SelectionKey> keys = ioAvailable.selectedKeys();
         LOG.log(Level.FINEST, "Driving IO for client " + this + ". " +
@@ -536,7 +552,7 @@ public class GearmanClientImpl
             GearmanJobServerSession session) throws IOException,
             IllegalStateException, GearmanException {
         if (!runState.equals(state.RUNNING)) {
-            throw new IllegalStateException("Client is not active");
+            throw new IllegalStateException(CLIENT_NOT_ACTIVE);
         }
 
         if (jobhandle == null || jobhandle.length == 0) {
@@ -550,7 +566,7 @@ public class GearmanClientImpl
         GearmanTask t = new GearmanTask(
                 handler, statusRequest);
         session.submitTask(t);
-        if (!driveRequestTillState(session, t,GearmanTask.State.FINISHED)) {
+        if (!driveRequestTillState(t,GearmanTask.State.FINISHED)) {
             throw new GearmanException("Failed to execute jobstatus request " +
                     t + " to session " + session);
         }
@@ -575,13 +591,12 @@ public class GearmanClientImpl
         return session;
     }
 
-    private boolean driveRequestTillState(GearmanJobServerSession session,
-            GearmanTask r, GearmanTask.State state)
+    private boolean driveRequestTillState(GearmanTask r, GearmanTask.State state)
             throws IOException, GearmanException {
         Alarm alarm = new Alarm();
         timer.schedule(alarm, 2000);
         while (r.getState().compareTo(state) < 0 && !(alarm.hasFired())) {
-            session.driveSessionIO();
+            driveClientIO();
         }
         return r.getState().compareTo(state) >= 0;
     }

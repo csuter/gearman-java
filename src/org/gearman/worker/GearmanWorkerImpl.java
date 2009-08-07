@@ -245,14 +245,14 @@ public class GearmanWorkerImpl
         }
     }
 
-    public void addServer(GearmanJobServerConnection conn)
+    public boolean addServer(GearmanJobServerConnection conn)
             throws IllegalArgumentException, IllegalStateException {
 
         //this is a sub-optimal way to look for dups, but addJobServer
         //ops should be infrequent enough that this should be a big penalty
         for (GearmanJobServerSession sess : sessionMap.values()) {
             if (sess.getConnection().equals(conn)) {
-                return;
+                return true;
             }
         }
 
@@ -262,13 +262,17 @@ public class GearmanWorkerImpl
             try {
                 ioAvailable = Selector.open();
             } catch (IOException ioe) {
-                throw new IORuntimeException(ioe);
+                LOG.log(Level.WARNING,"Failed to connect to job server "
+                    + conn + ".",ioe);
+                return false;
             }
         }
         try {
             session.initSession(ioAvailable, this);
         } catch (IOException ioe) {
-            throw new IORuntimeException(ioe);
+            LOG.log(Level.WARNING,"Failed to initialize session with job server "
+                    + conn + ".",ioe);
+            return false;
         }
         SelectionKey key = session.getSelectionKey();
         if (key == null) {
@@ -296,6 +300,7 @@ public class GearmanWorkerImpl
         session.submitTask(gsr);
         
         LOG.log(Level.FINE, "Added server " + conn + " to worker " + this);
+        return true;
     }
 
     public boolean hasServer(GearmanJobServerConnection conn) {
