@@ -1,5 +1,5 @@
 <project name="gearman-java" default="usage" basedir=".">
-    <property name="project.version" value="0.02"/>
+    <property name="project.version" value="0.03"/>
     <property name="src.dir" location="./src" />
     <property name="test.src.dir" location="./test" />
     <property name="build.dir" location="./build" />
