@@ -488,12 +488,13 @@ public class GearmanWorkerImpl
                     new GearmanPacketImpl(GearmanPacketMagic.REQ,
                     GearmanPacketType.WORK_FAIL, handle));
             sess.submitTask(gsr);
+        } else {
+            GearmanFunction function = def.getFactory().getFunction();
+            function.setData(data);
+            function.setJobHandle(handle);
+            function.registerEventListener(sess);
+            functionList.add(function);
         }
-        GearmanFunction function = def.getFactory().getFunction();
-        function.setData(data);
-        function.setJobHandle(handle);
-        function.registerEventListener(sess);
-        functionList.add(function);
     }
 
     private void submitFunction (GearmanFunction fun) {

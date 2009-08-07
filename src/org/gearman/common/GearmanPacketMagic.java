@@ -50,7 +50,7 @@ public enum GearmanPacketMagic {
      * @throws BadMagicException if byte array is not 4 bytes long
      */
     public static GearmanPacketMagic fromBytes(byte[] bytes) {
-        if (bytes != null & bytes.length == 4) {
+        if (bytes != null && bytes.length == 4) {
             int magic = ByteUtils.fromBigEndian(bytes);
             if (magic == ByteUtils.fromBigEndian(REQ.toBytes())) {
                 return REQ;
