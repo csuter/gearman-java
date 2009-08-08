@@ -5,10 +5,9 @@
  */
 package org.gearman.client;
 
-import org.gearman.common.GearmanPacket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import org.gearman.worker.GearmanFunction;
+import org.gearman.common.GearmanPacket;
 
 /**
  * The Gearman Job is a basic undivisible unit of work to be executed by a
@@ -43,8 +42,8 @@ public interface GearmanJob
     byte[] getID();
 
     /**
-     * Retrieve the name of the {@link GearmanFunction} registered with this
-     * job.
+     * Retrieve the name of the {@link org.gearman.worker.GearmanFunction}
+     * registered with this job.
      *
      * @return function name
      */
@@ -72,8 +71,8 @@ public interface GearmanJob
 
     /**
      * Retrieve the data against which the job is executed. This data is
-     * contained in {@link GearmanFunction} that has been registered with this
-     * job.
+     * contained in {@link org.gearman.worker.GearmanFunction} that has been
+     * registered with this job.
      *
      * @return The data against which the job is executed or if no data has
      *         been specified, returns an empty array.
@@ -81,9 +80,9 @@ public interface GearmanJob
     byte[] getData();
 
     /**
-     * Registers a particular {@link GearmanFunction} with this job. The
-     * GearmanFunction contains the definition for how the job will be executed
-     * and the data against which the execution will occurr.
+     * Registers a particular {@link org.gearman.worker.GearmanFunction} with
+     * this job. The GearmanFunction contains the definition for how the job
+     * will be executed and the data against which the execution will occurr.
      *
      * @param function The function defining job execution and data.
      */

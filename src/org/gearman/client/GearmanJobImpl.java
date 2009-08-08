@@ -7,41 +7,40 @@ package org.gearman.client;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanException;
+import org.gearman.common.GearmanJobServerSession;
 import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanPacketType;
-import org.gearman.common.GearmanJobServerSession;
 import org.gearman.common.GearmanServerResponseHandler;
-import org.gearman.worker.GearmanFunction;
 import org.gearman.util.ByteUtils;
+import org.gearman.worker.GearmanFunction;
 
-public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler {
+public final class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler {
 
     static final String DESCRIPTION_PREFIX = "GearmanJob";
     private final String DESCRIPTION;
+    private final String functionName;
+    private final boolean backgroundJob;
+    private final JobPriority priority;
+    private final Collection<GearmanIOEventListener> eventListners;
     private byte[] handle = null;
-    private String functionName = null;
     private byte[] data = new byte[0];
-    private boolean backgroundJob = false;
-    private JobPriority priority = null;
     private String uuid = null;
     private GearmanJobResultImpl jobResult = null;
     private GearmanJobServerSession session = null;
     private static final Logger LOG = Logger.getLogger(
             Constants.GEARMAN_SESSION_LOGGER_NAME);
     private boolean isComplete = false;
-    private Callable<GearmanPacket> function = null;
-    private Collection<GearmanIOEventListener> eventListners = null;
 
     private GearmanJobImpl(String functionName, byte[] data,
             boolean isBackground, JobPriority priority, String uuid)
@@ -64,8 +63,7 @@ public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler 
         } else {
             this.uuid = uuid;
         }
-        DESCRIPTION = new String(DESCRIPTION_PREFIX + ":" + uuid +
-                ":" + functionName);
+        DESCRIPTION = DESCRIPTION_PREFIX + ":" + uuid + ":" + functionName;
     }
 
     public static GearmanJob createJob(String functionName, byte[] data,
@@ -99,11 +97,13 @@ public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler 
     }
 
     public byte[] getHandle() {
-        return handle;
+        byte [] retHandle = new byte[handle.length];
+        System.arraycopy(handle, 0, retHandle, 0, retHandle.length);
+        return retHandle;
     }
 
     public byte[] getID() {
-        return uuid.toString().getBytes();
+        return uuid.getBytes();
     }
 
     public byte[] getData() {
@@ -154,9 +154,8 @@ public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler 
     }
 
     public void registerFunction(Callable<GearmanPacket> function) {
-        this.function = function;
-        if (this.function instanceof GearmanFunction) {
-            GearmanFunction gf = (GearmanFunction) this.function;
+        if (function instanceof GearmanFunction) {
+            GearmanFunction gf = (GearmanFunction) function;
             gf.setData(this.data);
         }
     }
@@ -229,12 +228,13 @@ public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler 
         switch (pt) {
 
             case JOB_CREATED:
-                LOG.log(Level.FINER, "job " + this +
+                LOG.log(Level.FINER, "job " + this +                            //NOPMD
                         " has received a job created event");
                 if (handle != null) {
                     throw new GearmanException("While handling job_create " +
-                            "for job " + handle + " noticed that job object" +
-                            "already has a handle " +
+                            "for job with handle" +
+                            ByteUtils.fromUTF8Bytes(handle) + " noticed that " +
+                            "job object already has a handle " +
                             ByteUtils.fromUTF8Bytes(handle) +
                             ". Duplicate create?");
                 }
@@ -250,7 +250,7 @@ public class GearmanJobImpl implements GearmanJob, GearmanServerResponseHandler 
                 break;
 
             case WORK_STATUS:
-                LOG.log(Level.FINER, "job " + this + " has received a work " +
+                LOG.log(Level.FINER, "job " + this + " has received a work " +   //NOPMD
                         "status event");
                 validateJobHandle(event.getDataComponentValue(
                         GearmanPacket.DataComponentName.JOB_HANDLE));
