@@ -7,7 +7,7 @@ package org.gearman.client;
 
 import java.util.Arrays;
 
-public class GearmanJobResultImpl implements GearmanJobResult, Cloneable {
+public class GearmanJobResultImpl implements GearmanJobResult {
 
     private long denominator;
     private long numerator;
@@ -27,11 +27,7 @@ public class GearmanJobResultImpl implements GearmanJobResult, Cloneable {
     public GearmanJobResultImpl(byte[] handle, boolean succeeded,
             byte[] results, byte[] warnings, byte[] exceptions, long numerator,
             long denominator) {
-        if (handle == null) {
-            this.handle = new byte[0];
-        } else {
-            this.handle = copyArray(handle);
-        }
+        this.handle = copyArray(handle);
         this.succeeded = succeeded;
         this.numerator = numerator;
         this.denominator = denominator;
@@ -95,8 +91,7 @@ public class GearmanJobResultImpl implements GearmanJobResult, Cloneable {
         return succeeded;
     }
 
-    @Override
-    public GearmanJobResult clone() {
+    public GearmanJobResult copy() {
         GearmanJobResultImpl res = new GearmanJobResultImpl(handle, succeeded,
                 copyArray(results), copyArray(warnings), copyArray(exceptions),
                 numerator, denominator);

@@ -189,7 +189,7 @@ public final class GearmanJobImpl implements GearmanJob, GearmanServerResponseHa
     public GearmanJobResult get(long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         if (isComplete) {
-            return jobResult.clone();
+            return jobResult.copy();
         }
         int retries = 10;
         long timeOutInMills = timeout < 0 ? -1 : 
@@ -218,7 +218,7 @@ public final class GearmanJobImpl implements GearmanJob, GearmanServerResponseHa
             throw new TimeoutException("Failed to retrieve job result in" +
                     " alloted time (" + timeout + " " + unit.toString() + ").");
         }
-        return jobResult.clone();
+        return jobResult.copy();
 
     }
 
