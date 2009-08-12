@@ -21,10 +21,10 @@ public class GearmanJobServerSession
 
     static final String DESCRIPTION_PREFIX = "GearmanJobServerSession";
     private final String DESCRIPTION;
+    private final GearmanNIOJobServerConnection connection;
     private Queue<GearmanPacket> packetsToWrite = null;
     private static final Logger LOG =  Logger.getLogger(
             Constants.GEARMAN_SESSION_LOGGER_NAME);
-    private GearmanNIOJobServerConnection connection = null;
     private SelectionKey sessionSelectionKey = null;
     private GearmanSessionEventHandler responseHandler = null;
     private Queue<GearmanTask> newTaskList = null;
@@ -38,8 +38,8 @@ public class GearmanJobServerSession
                     GearmanNIOJobServerConnection.class.getName());
         }
         connection = (GearmanNIOJobServerConnection) conn;
-        DESCRIPTION = new String(DESCRIPTION_PREFIX + ":" +
-                Thread.currentThread().getId() + ":" + conn.toString());
+        DESCRIPTION = DESCRIPTION_PREFIX + ":" +
+                Thread.currentThread().getId() + ":" + conn.toString();
     }
 
     @Override
@@ -60,7 +60,7 @@ public class GearmanJobServerSession
         this.responseHandler = handler;
         newTaskList = new LinkedList<GearmanTask>();
         tasksAwaitingAckList = new LinkedList<GearmanTask>();
-        LOG.log(Level.FINE, "Session " + this + " has been initialized.");
+        LOG.log(Level.FINE, "Session " + this + " has been initialized.");      //NOPMD
     }
 
     public GearmanJobServerConnection getConnection() {
@@ -88,7 +88,12 @@ public class GearmanJobServerSession
         try {
             waitForTasksToComplete(-1, TimeUnit.SECONDS);
         } catch (TimeoutException ignore) {
-        } //should never happen
+            //THIS SHOULD NEVER HAPPEN
+            LOG.log(Level.WARNING,"Unexpected timeout exception received " +
+                    "while waiting for current session task to complete. " +
+                    "Timeout value was set to -1, which means do not timeout, " +
+                    "yet it did. Go figure.",ignore);
+        }
     }
 
     public void waitForTasksToComplete(long timeout, TimeUnit unit)
@@ -171,6 +176,7 @@ public class GearmanJobServerSession
 
     public void driveSessionIO()
             throws IOException, GearmanException, IllegalStateException {
+        GearmanPacket p = null;
         if (!isInitialized()) {
             throw new IllegalStateException("you can not driveSessionIO on an" +
                     " un-initialized session");
@@ -180,9 +186,9 @@ public class GearmanJobServerSession
             if (packetsToWrite.isEmpty()) {
                 connection.write(null);
             } else {
-                GearmanPacket p = packetsToWrite.remove();
+                p = packetsToWrite.remove();
                 connection.write(p);
-                handleSessionEvent(new GearmanSessionEvent(p, this));
+                handleSessionEvent(new GearmanSessionEvent(p, this));           //NOPMD
             }
         }
         if (!sessionHasDataToWrite()) {
@@ -190,11 +196,11 @@ public class GearmanJobServerSession
         }
 
         while (canRead()) {
-            GearmanPacket p = connection.read();
+            p = connection.read();
             if (p == null) {
                 continue;
             }
-            handleSessionEvent(new GearmanSessionEvent(p, this));
+            handleSessionEvent(new GearmanSessionEvent(p, this));               //NOPMD
         }
     }
 

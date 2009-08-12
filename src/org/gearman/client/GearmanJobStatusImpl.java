@@ -6,10 +6,10 @@
 package org.gearman.client;
 
 import org.gearman.common.GearmanException;
-import org.gearman.util.ByteUtils;
-import org.gearman.common.GearmanPacketType;
 import org.gearman.common.GearmanPacket;
+import org.gearman.common.GearmanPacketType;
 import org.gearman.common.GearmanServerResponseHandler;
+import org.gearman.util.ByteUtils;
 
 public class GearmanJobStatusImpl implements GearmanServerResponseHandler,
         GearmanJobStatus {
@@ -22,6 +22,7 @@ public class GearmanJobStatusImpl implements GearmanServerResponseHandler,
     private boolean statusRequestCompleted = false;
 
     GearmanJobStatusImpl() {
+        super();
     }
 
     public long getDenominator() {

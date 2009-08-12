@@ -54,7 +54,7 @@ public class GearmanNIOJobServerConnection
     }
 
     @Override
-    public String toString () {
+    public String toString() {
         return DESCRIPTION;
     }
 
@@ -91,7 +91,7 @@ public class GearmanNIOJobServerConnection
                             "Giving up!", closeioe);
                 }
             }
-            throw new IOException();
+            throw ioe;
         }
         LOG.log(Level.FINE,"Connection " + this + " has been opened");
     }
@@ -256,7 +256,7 @@ public class GearmanNIOJobServerConnection
     // two equal objects should have the same hashcode
     @Override
     public int hashCode() {
-        return this.remote != null ? this.remote.hashCode() : 0;
+        return this.remote == null ? 0 : this.remote.hashCode();
     }
 
     private boolean bufferContainsCompletePacket(ByteBuffer b) {
