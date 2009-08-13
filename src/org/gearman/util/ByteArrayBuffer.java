@@ -26,12 +26,15 @@ public class ByteArrayBuffer implements Serializable {
     }
 
     public ByteArrayBuffer(byte[] bytes, int copyBufferSize) {
+        byte [] srcBytes;
         if (bytes == null) {
-            bytes = ByteUtils.EMPTY;
+            srcBytes = ByteUtils.EMPTY;
+        } else {
+            srcBytes = bytes;
         }
         this.copyBufferSize = copyBufferSize;
-        this.buf = new byte[bytes.length];
-        System.arraycopy(bytes, 0, buf, 0, bytes.length);
+        this.buf = new byte[srcBytes.length];
+        System.arraycopy(srcBytes, 0, buf, 0, srcBytes.length);
     }
 
     public byte[] getBytes() {
