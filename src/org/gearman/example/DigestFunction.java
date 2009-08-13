@@ -29,7 +29,7 @@ public class DigestFunction extends AbstractGearmanFunction {
 
 
     @Override
-    public GearmanJobResult executeFunction() throws Exception {
+    public GearmanJobResult executeFunction() {
         // First param is algorithm. Second is the data to digest.
         ByteArrayBuffer bab = new ByteArrayBuffer((byte[]) this.data);
         List<byte[]> params = bab.split(new byte[]{'\0'});

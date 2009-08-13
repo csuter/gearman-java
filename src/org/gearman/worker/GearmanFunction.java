@@ -7,14 +7,13 @@ package org.gearman.worker;
 
 import java.util.concurrent.Callable;
 import org.gearman.client.GearmanIOEventListener;
-import org.gearman.client.GearmanJob;
 import org.gearman.common.GearmanPacket;
 
 /**
  *
  * A Gearman Function represents the work to be accomplished by a
- * {@link GearmanJob}. It defines how the job is executed and the data, if
- * any, against which that execution will occurr.
+ * {@link org.gearman.client.GearmanJob}. It defines how the job is executed
+ * and the data, if any, against which that execution will occurr.
  */
 public interface GearmanFunction extends Callable<GearmanPacket> {
 

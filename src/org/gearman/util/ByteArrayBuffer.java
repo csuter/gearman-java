@@ -35,7 +35,9 @@ public class ByteArrayBuffer implements Serializable {
     }
 
     public byte[] getBytes() {
-        return buf;
+        byte [] retBytes = new byte[buf.length];
+        System.arraycopy(buf, 0, retBytes, 0, buf.length);
+        return retBytes;
     }
 
     public ByteArrayBuffer append(byte[] bytes) {

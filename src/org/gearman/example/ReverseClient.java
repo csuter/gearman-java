@@ -8,12 +8,12 @@ package org.gearman.example;
 
 import java.io.PrintStream;
 
-import org.gearman.common.Constants;
 import org.gearman.client.GearmanClient;
 import org.gearman.client.GearmanClientImpl;
 import org.gearman.client.GearmanJob;
 import org.gearman.client.GearmanJobImpl;
 import org.gearman.client.GearmanJobResult;
+import org.gearman.common.Constants;
 import org.gearman.common.GearmanJobServerConnection;
 import org.gearman.common.GearmanNIOJobServerConnection;
 import org.gearman.util.ByteUtils;
@@ -21,7 +21,6 @@ import org.gearman.util.ByteUtils;
 public class ReverseClient {
 
     private GearmanJobServerConnection conn;
-    private GearmanClient client;
 
     public ReverseClient(GearmanJobServerConnection conn) {
         this.conn = conn;
@@ -32,11 +31,13 @@ public class ReverseClient {
     }
 
     public String reverse(String input) {
+        GearmanClient client = null;
         String function = ReverseFunction.class.getCanonicalName();
         String uniqueId = null;
         byte[] data = ByteUtils.toUTF8Bytes(input);
         GearmanJobResult res = null;
         GearmanJob job = GearmanJobImpl.createJob(function, data, uniqueId);
+        String value = "";
 
         client = new GearmanClientImpl();
         client.addJobServer(conn);
@@ -45,10 +46,11 @@ public class ReverseClient {
 
         try {
             res = job.get();
+            value = ByteUtils.fromUTF8Bytes(res.getResults());
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();                                                //NOPMD
         }
-        return ByteUtils.fromUTF8Bytes(res.getResults());
+        return value;
     }
 
     public static void main(String[] args) {
@@ -66,7 +68,7 @@ public class ReverseClient {
                 port = Integer.parseInt(arg.substring(2));
             }
         }
-        System.out.println(new ReverseClient(host, port).reverse(payload));
+        System.out.println(new ReverseClient(host, port).reverse(payload));     //NOPMD
     }
 
     public static void usage(PrintStream out) {

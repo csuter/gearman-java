@@ -58,18 +58,23 @@
     </target>
 
     <target name="pmd" depends="compile, -check_pmd" description="Check the code with PMD">
+    	<condition property="pmd.report.type" value="html" else="xml">
+    		<isset property="gearman-java.reports.text"/>
+    	</condition>
         <path id="pmd.lib" >
             <pathelement location="${pmd.home}/lib/pmd.jar"/>
             <pathelement location="${pmd.home}/lib/jaxen.jar"/>
         </path>
         <taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask" classpathref="pmd.lib"/>
         <mkdir dir="build/pmd"/>
-        <pmd targetjdk="1.5" failuresPropertyName="pmd.num.warnings" rulesetfiles="tools/pmd/ruleset.xml">
-            <formatter type="html" toFile="build/pmd/report.html"/>
-            <formatter type="xml" toFile="build/pmd/report.xml"/>
+        <pmd targetjdk="1.5" failOnRuleViolation="true" failuresPropertyName="pmd.num.warnings" rulesetfiles="tools/pmd/ruleset.xml">
+            <formatter type="${pmd.report.type}" toFile="build/pmd/report.${pmd.report.type}"/>
             <fileset dir="src" includes="**/*.java"/>
         </pmd>
-        <echo message="PMD finished, found ${pmd.num.warnings} warnings, see build/pmd/pmd_report.html"/>
+    	<condition property="pmd.num.warnings.value" value="${pmd.num.warnings}" else="0">
+    		<isset property="pmd.num.warnings"/>
+    	</condition>
+        <echo message="PMD finished, found ${pmd.num.warnings.value} warnings, see build/pmd/pmd_report.html"/>
     </target>
 
     <target name="-check_findbugs" description="Check that findbugs jar files are present">
@@ -85,16 +90,20 @@
     </target>
 
     <target name="findbugs" depends="dist, -check_findbugs" description="Check the code with Findbugs">
+    	<condition property="findbugs.report.type" value="html" else="xml">
+    		<isset property="gearman-java.reports.text"/>
+    	</condition>
         <path id="findbugs.lib" >
             <pathelement location="${findbugs.home}/lib/findbugs.jar"/>
             <pathelement location="${findbugs.home}/lib/findbugs-ant.jar"/>
         </path>
         <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpathref="findbugs.lib"/>
         <mkdir dir="build/findbugs"/>
-        <findbugs projectname="${ant.project.name}-${project.version}" home="${findbugs.home}" output="xml" outputFile="build/findbugs/findbugs.xml">
+        <findbugs projectname="${ant.project.name}-${project.version}" home="${findbugs.home}" output="${findbugs.report.type}" outputFile="build/findbugs/findbugs.${findbugs.report.type}" warningsProperty="findbugs-warnings">
             <sourcePath path="src" />
             <class location="${dist.jar}" />
         </findbugs>
+        <fail if="findbugs-warnings" message="findbugs found one or more warnings"/>
     </target>
 
     <target name="-check_checkstyle" description="Check that checkstyle jar files are present">
@@ -105,11 +114,14 @@
     </target>
 
     <target name="checkstyle" depends="compile, -check_checkstyle" description="Check the style with Checkstyle">
+    	<condition property="checkstyle.report.type" value="plain" else="xml">
+    		<isset property="gearman-java.reports.text"/>
+    	</condition>
         <taskdef resource="checkstyletask.properties" classpath="${checkstyle.home}/checkstyle-all.jar"/>
         <mkdir dir="build/checkstyle"/>
-        <checkstyle config="tools/checkstyle/ruleset.xml" failOnViolation="false">
+        <checkstyle config="tools/checkstyle/ruleset.xml" failOnViolation="true">
             <fileset dir="src" includes="**/*.java"/>
-            <formatter type="xml" toFile="build/checkstyle/errors.xml"/>
+            <formatter type="${checkstyle.report.type}" toFile="build/checkstyle/errors.${checkstyle.report.type}"/>
         </checkstyle>
     </target>
 
@@ -143,6 +155,8 @@
 
     <target name="code-coverage" depends="clean, emma-instrument, test, emma-report" description="Create test code coverage reports based on the unit tests"/>
 
+    <target name="validate" depends="clean, dist, pmd, findbugs, checkstyle, test" description="Create test code coverage reports based on the unit tests"/>
+
     <target name="usage">
         <echo message="Build the ${ant.project.name} project."/>
         <echo message=""/>
@@ -159,12 +173,21 @@
         <echo message="test:     builds the jar file and testsuite. Runs the regression tests"/>
         <echo message="          against the built jar. Requires Junit 4.6 to be on classpath"/>
         <echo message="          or specified via the junit.jar property (-Djunit.jar)"/>
+        <echo message="          By default, junit will generate xml test results, to generate"/>
+        <echo message="          plain text results set the gearman-java.reports.text property."/>
         <echo message=""/>
-        <echo message="pmd:     builds the jar file and run pmd scan"/>
+        <echo message="pmd:      builds the jar file and run pmd scan"/>
         <echo message=""/>
         <echo message="code-coverage: Generate code coverage by running emma."/>
         <echo message=""/>
-        <echo message="clean:   removes the built classes, jar files and test results"/>
+        <echo message="validate: builds the jar and then runs a series of validation targets,"/>
+        <echo message="          including, pmd,findbugs,checkstyle, and test. By default, the"/>
+        <echo message="          reports generated by the sub taks of this target will be in an"/>
+        <echo message="          xml format --so that they can be parsed by build tools such as"/>
+        <echo message="          hudson. To generate reports in a more human friendly format"/>
+        <echo message="          (html or text) set the gearman-java.reports.text property."/>
+        <echo message=""/>
+        <echo message="clean:    removes the built classes, jar files and test results"/>
         <echo message=""/>
     </target>
 
@@ -229,10 +252,12 @@
     <!-- junit.jar file. Some of the tests may require that a gearmaand     -->
     <!-- instance be running and listening on the default port.             -->
     <target name="test" depends="compileTests">
+    	<condition property="junit.report.type" value="plain" else="xml">
+    		<isset property="gearman-java.reports.text"/>
+    	</condition>
         <mkdir dir="${build.tests.dir}/results" />
         <junit printsummary="true" failureproperty="junit.failure" fork="yes">
-            <formatter type="xml"/>
-            <formatter type="plain"/>
+            <formatter type="${junit.report.type}"/>
             <classpath>
               <path refid="test.classpath"/>
               <path refid="emma.lib"/>

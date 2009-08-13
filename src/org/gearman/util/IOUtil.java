@@ -12,7 +12,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class IOUtil {
+public final class IOUtil {
+
+    private IOUtil() {
+        
+    }
 
     /**
      * Similar to <code>DataInputStream.readFully()</code> with more informative

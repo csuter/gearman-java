@@ -5,9 +5,6 @@
  */
 package org.gearman.worker;
 
-import org.gearman.common.GearmanSessionEvent;
-import org.gearman.common.GearmanPacketMagic;
-import org.gearman.common.GearmanPacketType;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -16,6 +13,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -24,15 +23,18 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanException;
-import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanJobServerConnection;
 import org.gearman.common.GearmanJobServerSession;
-import org.gearman.common.GearmanTask;
-import org.gearman.common.GearmanServerResponseHandler;
-import org.gearman.common.GearmanSessionEventHandler;
+import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanPacketImpl;
+import org.gearman.common.GearmanPacketMagic;
+import org.gearman.common.GearmanPacketType;
+import org.gearman.common.GearmanServerResponseHandler;
+import org.gearman.common.GearmanSessionEvent;
+import org.gearman.common.GearmanSessionEventHandler;
+import org.gearman.common.GearmanTask;
+
 import org.gearman.util.ByteUtils;
-import org.gearman.util.IORuntimeException;
 
 public class GearmanWorkerImpl
         implements GearmanWorker, GearmanSessionEventHandler {
@@ -42,21 +44,20 @@ public class GearmanWorkerImpl
         IDLE, RUNNING, SHUTTINGDOWN
     }
     private static final String DESCRIPION_PREFIX = "GearmanWorker";
-    private final String DESCRIPTION;
-    private LinkedList<GearmanFunction> functionList = null;
+    private Queue<GearmanFunction> functionList = null;
     private Selector ioAvailable = null;
     private static final Logger LOG = Logger.getLogger(
             Constants.GEARMAN_WORKER_LOGGER_NAME);
     private String id;
-    private HashMap<String, FunctionDefinition> functionMap;
+    private Map<String, FunctionDefinition> functionMap;
     private State state;
     private ExecutorService executorService;
-    private HashMap<GearmanJobServerSession, GearmanTask> taskMap = null;
-    private HashMap<SelectionKey,GearmanJobServerSession> sessionMap = null;
+    private Map<GearmanJobServerSession, GearmanTask> taskMap = null;
+    private Map<SelectionKey,GearmanJobServerSession> sessionMap = null;
 
     class GrabJobEventHandler implements GearmanServerResponseHandler {
 
-        private GearmanJobServerSession session;
+        private final GearmanJobServerSession session;
         private boolean isDone = false;
 
         GrabJobEventHandler(GearmanJobServerSession session) {
@@ -74,9 +75,9 @@ public class GearmanWorkerImpl
         }
     }
 
-    class GearmanFunctionNameFactory implements GearmanFunctionFactory {
+    static class GearmanFunctionNameFactory implements GearmanFunctionFactory {
 
-        private String className = null;
+        private final String className;
 
         GearmanFunctionNameFactory(String className) {
             this.className = className;
@@ -102,10 +103,10 @@ public class GearmanWorkerImpl
         }
     }
 
-    class FunctionDefinition {
+    static class FunctionDefinition {
 
-        private long timeout = 0;
-        private GearmanFunctionFactory factory = null;
+        private final long timeout;
+        private final GearmanFunctionFactory factory;
 
         FunctionDefinition(long timeout, GearmanFunctionFactory factory) {
             this.timeout = timeout;
@@ -129,9 +130,8 @@ public class GearmanWorkerImpl
     //time we are not supporting executors. When we support differnt
     //variants of the Execute services, we will open this up
     private GearmanWorkerImpl(ExecutorService executorService) {
-        DESCRIPTION = DESCRIPION_PREFIX + ":" + Thread.currentThread().getId();
         functionList = new LinkedList<GearmanFunction>();
-        id = DESCRIPTION;
+        id = DESCRIPION_PREFIX + ":" + Thread.currentThread().getId();
         functionMap = new HashMap<String, FunctionDefinition>();
         state = State.IDLE;
         this.executorService = executorService;
@@ -180,7 +180,7 @@ public class GearmanWorkerImpl
                 try {
                     GearmanTask sessTask = taskMap.get(sess);
                     if (sessTask == null) {
-                        sessTask = new GearmanTask(
+                        sessTask = new GearmanTask(                             //NOPMD
                                 new GrabJobEventHandler(sess),
                                 new GearmanPacketImpl(GearmanPacketMagic.REQ,
                                 GearmanPacketType.GRAB_JOB, new byte[0]));
@@ -242,6 +242,10 @@ public class GearmanWorkerImpl
             case ERROR:
                 s.closeSession();
                 break;
+            default:
+                LOG.log(Level.WARNING,"Received unknown packet type " + t +
+                        " from session " + s + ". Closing connection.");
+                s.closeSession();
         }
     }
 
@@ -289,7 +293,7 @@ public class GearmanWorkerImpl
 
         for (FunctionDefinition def : functionMap.values()) {
             p = generateCanDoPacket(def);
-            session.submitTask(new GearmanTask(p));
+            session.submitTask(new GearmanTask(p));                              //NOPMD
         }
 
         p = new GearmanPacketImpl(GearmanPacketMagic.REQ,
@@ -497,7 +501,7 @@ public class GearmanWorkerImpl
         }
     }
 
-    private void submitFunction (GearmanFunction fun) {
+    private void submitFunction(GearmanFunction fun) {
         try {
             if (executorService == null) {
                 fun.call();

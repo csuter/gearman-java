@@ -6,19 +6,19 @@
 package org.gearman.example;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import org.gearman.common.Constants;
+import org.gearman.common.GearmanJobServerConnection;
+import org.gearman.common.GearmanNIOJobServerConnection;
 import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanPacketImpl;
 import org.gearman.common.GearmanPacketMagic;
 import org.gearman.common.GearmanPacketType;
 import org.gearman.util.ByteUtils;
-import java.io.PrintStream;
-import org.gearman.common.GearmanJobServerConnection;
-import org.gearman.common.GearmanNIOJobServerConnection;
 
 public class EchoClient {
 
-    private GearmanJobServerConnection connection;
+    private final GearmanJobServerConnection connection;
     private boolean loop = true;
 
     public EchoClient(String host, int port) throws IOException {
@@ -32,8 +32,7 @@ public class EchoClient {
                 GearmanPacketMagic.REQ, GearmanPacketType.ECHO_REQ, data);
         connection.write(reverseRequest);
         byte[] respBytes = readResponse();
-        String echo = ByteUtils.fromAsciiBytes(respBytes);
-        return echo;
+        return ByteUtils.fromAsciiBytes(respBytes);
     }
 
     private byte[] readResponse() throws IOException {
@@ -72,9 +71,9 @@ public class EchoClient {
         }
 
         try {
-            System.out.println(new EchoClient(host, port).echo(payload));
+            System.out.println(new EchoClient(host, port).echo(payload));       //NOPMD
         } catch (IOException ioe) {
-            ioe.printStackTrace();
+            ioe.printStackTrace();                                              //NOPMD
         }
     }
 
@@ -94,7 +93,7 @@ public class EchoClient {
     }
 
     public static void println(String msg) {
-        System.err.println(Thread.currentThread().getName() + ": " + msg);
+        System.err.println(Thread.currentThread().getName() + ": " + msg);      //NOPMD
     }
 }
 

@@ -21,7 +21,6 @@ public class GearmanTask implements GearmanIOEventListener {
     private final String DESCRIPTION;
     private State state = null;
     private GearmanPacket requestPacket = null;
-    private UUID uuid = null;
     private GearmanServerResponseHandler handler = null;
     private static final Logger LOG = Logger.getLogger(
             Constants.GEARMAN_JOB_LOGGER_NAME);
@@ -42,10 +41,10 @@ public class GearmanTask implements GearmanIOEventListener {
         }
 
         state = State.NEW;
-        uuid = UUID.randomUUID();
+        UUID uuid = UUID.randomUUID();
         requestPacket = packet; //TODO make a copy of the packet or make sure the packet is hardened against tampering
         this.handler = handler;
-        DESCRIPTION = new String(DESCRIPTION_PREFIX + ":" + handler + ":" + uuid);
+        DESCRIPTION = DESCRIPTION_PREFIX + ":" + handler + ":" + uuid;
 
     }
 
@@ -82,9 +81,7 @@ public class GearmanTask implements GearmanIOEventListener {
                     break;
 
                 case RUNNING:
-                    if (!p.getMagic().equals(GearmanPacketMagic.RES)) {
-                        cont = false;
-                    } else {
+                    if (p.getMagic().equals(GearmanPacketMagic.RES)) {
                         if (handler == null) {
                             LOG.log(Level.WARNING, "ServerRequest requires " +
                                     "response, but not response handler was " +
@@ -94,16 +91,18 @@ public class GearmanTask implements GearmanIOEventListener {
                         } else {
                             try {
                                 handler.handleEvent(p);
-                                if (!handler.isDone()) {
+                                if (handler.isDone()) {
+                                    changeState(State.FINISHED);
+                                } else {
                                     changeState(State.RUNNING);
                                     cont = false;
-                                } else {
-                                    changeState(State.FINISHED);
                                 }
                             } catch (GearmanException ge) {
                                 changeState(State.EXCEPTION);
                             }
                         }
+                    } else {
+                        cont = false;
                     }
                     break;
 

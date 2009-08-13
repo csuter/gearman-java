@@ -90,7 +90,7 @@ public class GearmanPacketImpl implements GearmanPacket {
         return baos.toByteArray();
     }
 
-    public ArrayList<byte[]> getDataComponents(int tokens) {
+    ArrayList<byte[]> getDataComponents(int tokens) {                           //NOPMD
         int curTokenStart, i, curToken;
         curTokenStart = i = curToken = 0;
         byte[] curTokenData = null;
@@ -103,7 +103,7 @@ public class GearmanPacketImpl implements GearmanPacket {
         // process all but the last token (data segment)
         while (curToken < tokens - 1 && i < data.length) {
             if (data[i] == ByteUtils.NULL) {
-                curTokenData = new byte[i - curTokenStart];
+                curTokenData = new byte[i - curTokenStart];                     //NOPMD
                 System.arraycopy(data, curTokenStart, curTokenData, 0,
                         i - curTokenStart);
                 al.add(curTokenData);
@@ -149,11 +149,12 @@ public class GearmanPacketImpl implements GearmanPacket {
 
     @Override
     public String toString() {
-        String s = magic + ":" + type + ":" + data.length;
+        StringBuffer s = new StringBuffer(magic + ":" + type + ":" +
+                data.length);
         if (data.length > 0) {
-            s += ": [" + ByteUtils.toHex(data) + "]";
+            s.append(": [" + ByteUtils.toHex(data) + "]");
         }
-        return s;
+        return s.toString();
     }
 
     public boolean requiresResponse() {
@@ -173,9 +174,8 @@ public class GearmanPacketImpl implements GearmanPacket {
                 type.equals(GearmanPacketType.SUBMIT_JOB_HIGH_BG) ||
                 type.equals(GearmanPacketType.OPTION_REQ)) {
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public byte[] getDataComponentValue(DataComponentName component) {
@@ -282,6 +282,16 @@ public class GearmanPacketImpl implements GearmanPacket {
                 valuesMap.put(DataComponentName.UNIQUE_ID, components.get(2));
                 valuesMap.put(DataComponentName.DATA, components.get(3));
                 break;
+            case RESET_ABILITIES:
+            case PRE_SLEEP:
+            case GRAB_JOB:
+            case GRAB_JOB_UNIQ:
+            case ALL_YOURS:
+            case NOOP:
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown packet type " +
+                        type);
         }
         byte [] rt = valuesMap.containsKey(component) ? valuesMap.get(component) :
             new byte[0];

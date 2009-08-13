@@ -9,7 +9,6 @@ package org.gearman.worker;
 
 import java.util.List;
 import java.util.Set;
-import org.gearman.client.GearmanJob;
 import org.gearman.common.GearmanJobServerConnection;
 
 /**
@@ -78,9 +77,10 @@ public interface GearmanWorker {
     /**
      * Registers a particular {@link GearmanFunction} with the worker. Once a
      * function has been registered with a worker, the worker is capable of
-     * executing any {@link GearmanJob} that matches the registered function.
-     * Upon registering a function, the Worker notifies all Gearman Job Servers
-     * that it can accept any job that contains the applicable function.
+     * executing any {@link org.gearman.client.GearmanJob} that matches the
+     * registered function. Upon registering a function, the Worker notifies all
+     * Gearman Job Servers that it can accept any job that contains the
+     * applicable function.
      *
      * @param function The function being registered with the Worker.
      *
@@ -94,9 +94,10 @@ public interface GearmanWorker {
     /**
      * Registers a particular {@link GearmanFunction} with the worker. Once a
      * function has been registered with a worker, the worker is capable of
-     * executing any {@link GearmanJob} that matches the registered function.
-     * Upon registering a function, the Worker notifies all Gearman Job Servers
-     * that is can accept any job that contains the applicable function.
+     * executing any {@link org.gearman.client.GearmanJob} that matches the
+     * registered function. Upon registering a function, the Worker notifies all
+     * Gearman Job Servers that is can accept any job that contains the
+     * applicable function.
      *
      * @param function The function being registered with the Worker.
      */

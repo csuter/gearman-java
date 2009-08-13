@@ -9,12 +9,12 @@ package org.gearman.example;
 import java.io.PrintStream;
 
 import java.util.concurrent.Future;
-import org.gearman.common.Constants;
 import org.gearman.client.GearmanClient;
 import org.gearman.client.GearmanClientImpl;
 import org.gearman.client.GearmanJob;
 import org.gearman.client.GearmanJobImpl;
 import org.gearman.client.GearmanJobResult;
+import org.gearman.common.Constants;
 import org.gearman.common.GearmanJobServerConnection;
 import org.gearman.common.GearmanNIOJobServerConnection;
 import org.gearman.util.ByteUtils;
@@ -42,7 +42,7 @@ public class DigestClient {
         try {
             jr = f.get();
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();                                                //NOPMD
         }
         if (jr == null) {
             return new byte[0];
@@ -67,7 +67,7 @@ public class DigestClient {
             }
         }
         byte[] md5 = new DigestClient(host, port).digest(payload);
-        System.out.println(ByteUtils.toHex(md5));
+        System.out.println(ByteUtils.toHex(md5));                               //NOPMD
     }
 
     public static void usage(PrintStream out) {

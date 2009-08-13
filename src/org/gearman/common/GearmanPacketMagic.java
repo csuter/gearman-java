@@ -37,7 +37,9 @@ public enum GearmanPacketMagic {
      * @return the PacketMagic bytes
      */
     public byte[] toBytes() {
-        return name;
+        byte [] retBytes = new byte[name.length];
+        System.arraycopy(name, 0, retBytes, 0, name.length);
+        return retBytes;
     }
 
     /**

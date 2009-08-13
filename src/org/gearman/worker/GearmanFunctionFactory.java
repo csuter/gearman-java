@@ -7,12 +7,12 @@
  */
 package org.gearman.worker;
 
-import org.gearman.client.GearmanJob;
 
 /**
  * Factory for producing {@link GearmanFunction} objects. A factory can be
  * registered with a {@link GearmanWorker} to allow control over the JobFunction
- * instance that the Worker will call to perform {@link GearmanJob}s.
+ * instance that the Worker will call to perform {@link 
+ * org.gearman.client.GearmanJob}s.
  */
 public interface GearmanFunctionFactory {
 

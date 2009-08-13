@@ -12,7 +12,7 @@ import org.gearman.worker.AbstractGearmanFunction;
 
 public class ReverseFunction extends AbstractGearmanFunction {
     
-    public GearmanJobResult executeFunction() throws Exception {
+    public GearmanJobResult executeFunction() {
 
         StringBuffer sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte[]) this.data));
         GearmanJobResult gjr = new GearmanJobResultImpl(this.jobHandle,

@@ -52,7 +52,7 @@ public class GearmanClientJobExecTest {
 
     class incrementalReverseFunction extends AbstractGearmanFunction {
 
-        public GearmanJobResult executeFunction() throws Exception {
+        public GearmanJobResult executeFunction() {
             StringBuffer sb = null;
             if (data instanceof byte []) {
                 sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte [])data));
@@ -85,7 +85,7 @@ public class GearmanClientJobExecTest {
     class newReverseFunction extends AbstractGearmanFunction {
 
         @Override
-        public GearmanJobResult executeFunction() throws Exception {
+        public GearmanJobResult executeFunction() {
             StringBuffer sb = null;
             byte [] results = null;
             if (data instanceof byte []) {
@@ -118,7 +118,7 @@ public class GearmanClientJobExecTest {
 
         boolean keepRunning = true;
 
-        public GearmanJobResult executeFunction() throws Exception {
+        public GearmanJobResult executeFunction() {
             while (keepRunning) {
                 try {
                     Thread.sleep(100);

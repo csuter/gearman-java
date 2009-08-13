@@ -9,12 +9,16 @@ package org.gearman.util;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 
-public class ByteUtils {
+public final class ByteUtils {
 
     public static final byte NULL = (byte) 0;
     public static final byte[] EMPTY = new byte[0];
     public static final String CHARSET_ASCII = "ASCII";
     public static final String CHARSET_UTF_8 = "UTF-8";
+
+    private ByteUtils() {
+        
+    }
 
     public static byte[] toAsciiBytes(String string) {
         return toBytes(string, CHARSET_ASCII);
@@ -36,7 +40,8 @@ public class ByteUtils {
         try {
             return string.getBytes(encoding);
         } catch (UnsupportedEncodingException noAscii) {
-            throw new RuntimeException(noAscii);
+            throw new IllegalArgumentException("Runtime does not support" +
+                    " encoding " + encoding, noAscii);
         }
     }
 
@@ -47,7 +52,8 @@ public class ByteUtils {
         try {
             return new String(bytes, encoding);
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException("Runtime does not support" +
+                    " encoding " + encoding, e);
         }
     }
 
@@ -66,7 +72,7 @@ public class ByteUtils {
         return new BigInteger(hex, 16).toByteArray();
     }
 
-    public static final byte[] toBigEndian(int i) {
+    public static byte[] toBigEndian(int i) {
         byte b0 = selectByte(3, i);
         byte b1 = selectByte(2, i);
         byte b2 = selectByte(1, i);
@@ -74,7 +80,7 @@ public class ByteUtils {
         return new byte[]{b0, b1, b2, b3};
     }
 
-    public static final int fromBigEndian(byte[] b) {
+    public static int fromBigEndian(byte[] b) {
         return toInt(3, b[0]) //
                 + toInt(2, b[1]) //
                 + toInt(1, b[2]) //
@@ -82,7 +88,7 @@ public class ByteUtils {
     }
 
     public static byte selectByte(int byteSignificance, int from) {
-        return (byte) (from >>> (8 * byteSignificance));
+        return (byte) (from >> (8 * byteSignificance));
     }
 
     public static int toInt(int byteSignificance, byte b) {

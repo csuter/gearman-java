@@ -11,10 +11,11 @@ package org.gearman.common;
  * transcribed from libgearman/constants.h (BSD)
  * Copyright (C) 2008 Brian Aker, Eric Day
  */
-public interface Constants {
+//TODO REFACTOR THIS SO THAT IS NOT AN INTERFACE
+public interface Constants {                                                    //NOPMD (Suppress replace interface with class warning)
     /* Defines. */
 
-    public static final String GEARMAN_DEFAULT_TCP_HOST = "127.0.0.1";
+    public static final String GEARMAN_DEFAULT_TCP_HOST = "127.0.0.1";          //NOPMD
     public static final int GEARMAN_DEFAULT_TCP_PORT = 4730;
     public static final int GEARMAN_DEFAULT_SOCKET_TIMEOUT = 10;
     public static final int GEARMAN_DEFAULT_SOCKET_SEND_SIZE = 32768;

@@ -61,22 +61,18 @@ public enum GearmanPacketType {
     }
 
     public byte[] toBytes() {
-        return type;
+        byte [] retBytes = new byte[type.length];
+        System.arraycopy(type, 0, retBytes, 0, type.length);
+        return retBytes;
     }
 
     public static boolean isJobSubmission(GearmanPacketType pt) {
-        switch (pt) {
-            case SUBMIT_JOB:
-            case SUBMIT_JOB_BG:
-            case SUBMIT_JOB_HIGH:
-            case SUBMIT_JOB_HIGH_BG:
-            case SUBMIT_JOB_LOW:
-            case SUBMIT_JOB_LOW_BG:
-                return true;
-            default:
-                return false;
-
+        if (pt.equals(SUBMIT_JOB) || pt.equals(SUBMIT_JOB_BG) ||
+            pt.equals(SUBMIT_JOB_HIGH) || pt.equals(SUBMIT_JOB_HIGH_BG) ||
+            pt.equals(SUBMIT_JOB_LOW) || pt.equals(SUBMIT_JOB_LOW_BG)) {
+            return true;
         }
+        return false;
     }
 
     /**
@@ -95,6 +91,6 @@ public enum GearmanPacketType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("" + ordinal);
+        throw new IllegalArgumentException(Integer.toString(ordinal));
     }
 }
