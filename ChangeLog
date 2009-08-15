@@ -1,5 +1,10 @@
 0.03 - 2009-XX-XX
  * Cleanup findbugs, pmd, and checkstyle warnings
+ * Misc. build improvements
+   - build will look for property definitions in 
+     ~/.ant/gearman-java.build.properties
+   - generate all reports in xml or 'text' depending on whether 
+     gearman-java.reports.text property is set.
  * Changed signature of the addServerMethod in GearmanClient and
    GearmanWorker (as well as their implementations) to return a
    boolean to indicate success or failure of attempt. Attmepts to
@@ -8,6 +13,10 @@
  * ClientImpl driveRequestTillState now drivesIO on all sessions that
    are selected for IO instead of driving IO for only the session to
    which the request belongs.
+ * Allow gearman functions to control the name that will be used to 
+   register the function with the server when using the default 
+   function factory (factory was ignoring the name of the funciton 
+   and always registering function with its class name).
 
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.

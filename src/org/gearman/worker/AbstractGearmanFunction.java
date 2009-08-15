@@ -18,18 +18,26 @@ import org.gearman.util.ByteUtils;
 
 public abstract class AbstractGearmanFunction implements GearmanFunction {
 
-    protected String name;
+    protected final String name;
     protected Object data;
     protected byte[] jobHandle;
     protected Set<GearmanIOEventListener> listeners;
 
     public AbstractGearmanFunction() {
-        listeners = new HashSet<GearmanIOEventListener>();
-        jobHandle = new byte[0];
-        name = this.getClass().getCanonicalName();
+        this(null);
     }
 
-    public String getName() {                                                   //NOPMD (Supressing warning that states "An empty method in an abstract class should be abstract instead", method not empty
+    public AbstractGearmanFunction(String name) {
+        listeners = new HashSet<GearmanIOEventListener>();
+        jobHandle = new byte[0];
+        if (name == null) {
+            this.name = this.getClass().getCanonicalName();
+        } else {
+            this.name = name;
+        }
+    }
+
+    public String getName() {                                                   
         return name;
     }
 
@@ -48,7 +56,7 @@ public abstract class AbstractGearmanFunction implements GearmanFunction {
         System.arraycopy(handle, 0, jobHandle, 0, handle.length);
     }
 
-    public byte[] getJobHandle() {                                              //NOPMD (Supressing warning that states "An empty method in an abstract class should be abstract instead", method not empty
+    public byte[] getJobHandle() {                                              
         byte[] rt = new byte[jobHandle.length];
         System.arraycopy(jobHandle, 0, rt, 0, jobHandle.length);
         return rt;
@@ -101,7 +109,7 @@ public abstract class AbstractGearmanFunction implements GearmanFunction {
 
     public abstract GearmanJobResult executeFunction();
 
-    public GearmanPacket call() {                                               //NOPMD (Supressing warning that states "An empty method in an abstract class should be abstract instead", method not empty
+    public GearmanPacket call() {                                               
         GearmanPacket event = null;
         try {
             GearmanJobResult result = executeFunction();

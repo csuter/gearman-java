@@ -20,41 +20,6 @@ import org.junit.Before;
 
 public class GearmanWorkerImplTest {
 
-    class testFunction implements GearmanFunction {
-
-        private String name = this.getClass().getCanonicalName();
-        Object data = null;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setData(Object data) {
-            this.data = data;
-        }
-
-        public GearmanPacket call() throws Exception {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public void setJobHandle(byte[] handle) throws IllegalArgumentException {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public byte[] getJobHandle() {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public void registerEventListener(GearmanIOEventListener listener) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        public void fireEvent(GearmanPacket event) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-    }
-
     GearmanWorkerImpl worker;
     ServerSocket s = null;
     ServerSocket s1 = null;
@@ -94,40 +59,40 @@ public class GearmanWorkerImplTest {
 
     @Test
     public void registerFunctionTest() {
-        worker.registerFunction(testFunction.class.getCanonicalName());
+        worker.registerFunction(ExampleFunction.class.getCanonicalName());
         Set<String> regFuncs = worker.getRegisteredFunctions();
         Assert.assertTrue(regFuncs.size() == 1);
-        Assert.assertTrue(regFuncs.contains(testFunction.class.getCanonicalName()));
+        Assert.assertTrue(regFuncs.contains(ExampleFunction.class.getCanonicalName()));
     }
 
     @Test
     public void registerFunctionTestWithTimeout() {
-        worker.registerFunction(testFunction.class.getCanonicalName(),2000);
+        worker.registerFunction(ExampleFunction.class.getCanonicalName(),2000);
         Set<String> regFuncs = worker.getRegisteredFunctions();
         Assert.assertTrue(regFuncs.size() == 1);
-        Assert.assertTrue(regFuncs.contains(testFunction.class.getCanonicalName()));
+        Assert.assertTrue(regFuncs.contains(ExampleFunction.class.getCanonicalName()));
     }
 
     @Test
     public void registerDupFunctionTest() {
-        worker.registerFunction(testFunction.class.getCanonicalName());
-        worker.registerFunction(testFunction.class.getCanonicalName());
+        worker.registerFunction(ExampleFunction.class.getCanonicalName());
+        worker.registerFunction(ExampleFunction.class.getCanonicalName());
         Set<String> regFuncs = worker.getRegisteredFunctions();
         Assert.assertTrue(regFuncs.size() == 1);
-        Assert.assertTrue(regFuncs.contains(testFunction.class.getCanonicalName()));
+        Assert.assertTrue(regFuncs.contains(ExampleFunction.class.getCanonicalName()));
     }
 
     @Test
     public void unregisterFunctionTest() {
-        worker.registerFunction(testFunction.class.getCanonicalName());
-        worker.unregisterFunction(testFunction.class.getCanonicalName());
+        worker.registerFunction(ExampleFunction.class.getCanonicalName());
+        worker.unregisterFunction(ExampleFunction.class.getCanonicalName());
         Set<String> regFuncs = worker.getRegisteredFunctions();
         Assert.assertTrue(regFuncs.size() == 0);
     }
 
     @Test
     public void unregisterAllFunctionTest() {
-        worker.registerFunction(testFunction.class.getCanonicalName());
+        worker.registerFunction(ExampleFunction.class.getCanonicalName());
         worker.unregisterAll();
         Set<String> regFuncs = worker.getRegisteredFunctions();
         Assert.assertTrue(regFuncs.size() == 0);

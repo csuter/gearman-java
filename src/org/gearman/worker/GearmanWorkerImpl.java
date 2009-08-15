@@ -75,34 +75,6 @@ public class GearmanWorkerImpl
         }
     }
 
-    static class GearmanFunctionNameFactory implements GearmanFunctionFactory {
-
-        private final String className;
-
-        GearmanFunctionNameFactory(String className) {
-            this.className = className;
-        }
-
-        public String getFunctionName() {
-            return className;
-        }
-
-        public GearmanFunction getFunction() {
-            GearmanFunction f = null;
-            try {
-                Class c = Class.forName(className);
-                Object o = c.newInstance();
-                if (o instanceof GearmanFunction) {
-                    f = (GearmanFunction) o;
-                }
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Unable to create instance of " +
-                        "Function: " + className, e);
-            }
-            return f;
-        }
-    }
-
     static class FunctionDefinition {
 
         private final long timeout;
@@ -322,7 +294,7 @@ public class GearmanWorkerImpl
     }
 
     public void registerFunction(String function, long timeout) {
-        registerFunctionFactory(new GearmanFunctionNameFactory(function),
+        registerFunctionFactory(new DefaultGearmanFunctionFactory(function),
                 timeout);
     }
 
@@ -336,7 +308,7 @@ public class GearmanWorkerImpl
 
     public void registerFunction(Class<? extends GearmanFunction> function,
             long timeout) {
-        registerFunctionFactory(new GearmanFunctionNameFactory(
+        registerFunctionFactory(new DefaultGearmanFunctionFactory(
                 function.getName()), timeout);
     }
 
