@@ -6,7 +6,6 @@
  */
 package org.gearman.example;
 
-import java.io.PrintStream;
 
 import java.util.concurrent.Future;
 import org.gearman.client.GearmanClient;
@@ -21,10 +20,12 @@ import org.gearman.util.ByteUtils;
 
 public class DigestClient {
 
-    private GearmanJobServerConnection conn;
+    private GearmanClient client;
+    private static final String ALGO_NAME = "MD5";
 
     public DigestClient(GearmanJobServerConnection conn) {
-        this.conn = conn;
+        client = new GearmanClientImpl();
+        client.addJobServer(conn);
     }
 
     public DigestClient(String host, int port) {
@@ -34,9 +35,14 @@ public class DigestClient {
     public byte[] digest(byte[] input) {
         String function = DigestFunction.class.getCanonicalName();
         String uniqueId = null;
-        GearmanClient client = new GearmanClientImpl();
-        client.addJobServer(conn);
-        GearmanJob job = GearmanJobImpl.createJob(function, input, uniqueId);
+        byte [] algoNameBytes = ALGO_NAME.getBytes();
+        byte [] digestParms = new byte [input.length + algoNameBytes.length + 1];
+        System.arraycopy(algoNameBytes, 0, digestParms, 0, algoNameBytes.length);
+        digestParms[algoNameBytes.length] = '\0';
+        System.arraycopy(input, 0, digestParms, algoNameBytes.length + 1,
+                input.length);
+        GearmanJob job = GearmanJobImpl.createJob(function, digestParms,
+                uniqueId);
         Future<GearmanJobResult> f = client.submit(job);
         GearmanJobResult jr = null;
         try {
@@ -47,13 +53,25 @@ public class DigestClient {
         if (jr == null) {
             return new byte[0];
         } else {
-            return jr.jobSucceeded() ? jr.getResults() : jr.getExceptions();
+            if (jr.jobSucceeded()) {
+                return jr.getResults();
+            } else {
+                System.err.println(ByteUtils.fromUTF8Bytes(jr.getExceptions()));//NOPMD
+                return new byte[0];
+            }
         }
+    }
+
+    public void shutdown() throws IllegalStateException {
+        if (client == null) {
+            throw new IllegalStateException("No client to shutdown");
+        }
+        client.shutdown();
     }
 
     public static void main(String[] args) {
         if (args.length == 0 || args.length > 3) {
-            usage(System.out);
+            usage();
             return;
         }
         String host = Constants.GEARMAN_DEFAULT_TCP_HOST;
@@ -66,11 +84,13 @@ public class DigestClient {
                 port = Integer.parseInt(arg.substring(2));
             }
         }
-        byte[] md5 = new DigestClient(host, port).digest(payload);
+        DigestClient dc = new DigestClient(host, port);
+        byte[] md5 = dc.digest(payload);
         System.out.println(ByteUtils.toHex(md5));                               //NOPMD
+	dc.shutdown();
     }
 
-    public static void usage(PrintStream out) {
+    public static void usage() {
         String[] usage = {
             "usage: org.gearman.example.DigestClient [-h<host>] [-p<port>]" +
                     " <string>",
@@ -82,7 +102,7 @@ public class DigestClient {
         };
 
         for (String line : usage) {
-            out.println(line);
+            System.err.println(line);                                           //NOPMD
         }
     }
 }

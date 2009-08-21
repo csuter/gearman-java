@@ -6,57 +6,39 @@
 package org.gearman.example;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import org.gearman.client.GearmanClientImpl;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanJobServerConnection;
 import org.gearman.common.GearmanNIOJobServerConnection;
-import org.gearman.common.GearmanPacket;
-import org.gearman.common.GearmanPacketImpl;
-import org.gearman.common.GearmanPacketMagic;
-import org.gearman.common.GearmanPacketType;
 import org.gearman.util.ByteUtils;
 
 public class EchoClient {
 
-    private final GearmanJobServerConnection connection;
-    private boolean loop = true;
+    private final GearmanClientImpl client;
 
     public EchoClient(String host, int port) throws IOException {
-        this.connection = new GearmanNIOJobServerConnection(host, port);
-        connection.open();
+        GearmanJobServerConnection connection =
+                new GearmanNIOJobServerConnection(host, port);
+	client = new GearmanClientImpl();
+	client.addJobServer(connection);
     }
 
     public String echo(String input) throws IOException {
-        byte[] data = ByteUtils.toAsciiBytes(input);
-        GearmanPacket reverseRequest = new GearmanPacketImpl(
-                GearmanPacketMagic.REQ, GearmanPacketType.ECHO_REQ, data);
-        connection.write(reverseRequest);
-        byte[] respBytes = readResponse();
-        return ByteUtils.fromAsciiBytes(respBytes);
+        byte[] data = ByteUtils.toUTF8Bytes(input);
+        byte[] respBytes = client.echo(data);
+        return ByteUtils.fromUTF8Bytes(respBytes);
     }
 
-    private byte[] readResponse() throws IOException {
-        byte[] respBytes = ByteUtils.EMPTY;
-        while (loop) {
-            GearmanPacket fromServer = connection.read();
-            GearmanPacketType packetType = fromServer.getPacketType();
-            if (packetType == GearmanPacketType.ECHO_RES) {
-                return fromServer.getData();
-            } else {
-                println("Unexpected PacketType: " + packetType);
-                println("Unexpected Packet: " + fromServer);
-            }
+    public void shutdown() throws IllegalStateException {
+        if (client == null) {
+            throw new IllegalStateException("No client to shutdown");
         }
-        return respBytes;
-    }
-
-    public void shutdown() {
-        loop = false;
+        client.shutdown();
     }
 
     public static void main(String[] args) {
         if (args.length == 0 || args.length > 3) {
-            usage(System.out);
+            usage();
             return;
         }
         String host = Constants.GEARMAN_DEFAULT_TCP_HOST;
@@ -71,13 +53,15 @@ public class EchoClient {
         }
 
         try {
-            System.out.println(new EchoClient(host, port).echo(payload));       //NOPMD
+            EchoClient ec = new EchoClient(host,port);
+            System.out.println(ec.echo(payload));                               //NOPMD
+            ec.shutdown();
         } catch (IOException ioe) {
             ioe.printStackTrace();                                              //NOPMD
         }
     }
 
-    public static void usage(PrintStream out) {
+    public static void usage() {
         String[] usage = {
             "usage: gearmanij.example.EchoClient [-h<host>] [-p<port>] <string>",
             "\t-h<host> - job server host",
@@ -88,12 +72,8 @@ public class EchoClient {
         };
 
         for (String line : usage) {
-            out.println(line);
+            System.err.println(line);                                           //NOPMD
         }
-    }
-
-    public static void println(String msg) {
-        System.err.println(Thread.currentThread().getName() + ": " + msg);      //NOPMD
     }
 }
 

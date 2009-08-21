@@ -6,7 +6,6 @@
  */
 package org.gearman.example;
 
-import java.io.PrintStream;
 
 import org.gearman.client.GearmanClient;
 import org.gearman.client.GearmanClientImpl;
@@ -20,10 +19,11 @@ import org.gearman.util.ByteUtils;
 
 public class ReverseClient {
 
-    private GearmanJobServerConnection conn;
+    private GearmanClient client;
 
     public ReverseClient(GearmanJobServerConnection conn) {
-        this.conn = conn;
+        client = new GearmanClientImpl();
+        client.addJobServer(conn);
     }
 
     public ReverseClient(String host, int port) {
@@ -31,16 +31,12 @@ public class ReverseClient {
     }
 
     public String reverse(String input) {
-        GearmanClient client = null;
         String function = ReverseFunction.class.getCanonicalName();
         String uniqueId = null;
         byte[] data = ByteUtils.toUTF8Bytes(input);
         GearmanJobResult res = null;
         GearmanJob job = GearmanJobImpl.createJob(function, data, uniqueId);
         String value = "";
-
-        client = new GearmanClientImpl();
-        client.addJobServer(conn);
 
         client.submit(job);
 
@@ -53,9 +49,16 @@ public class ReverseClient {
         return value;
     }
 
+    public void shutdown() throws IllegalStateException {
+        if (client == null) {
+            throw new IllegalStateException("No client to shutdown");
+        }
+        client.shutdown();
+    }
+
     public static void main(String[] args) {
         if (args.length == 0 || args.length > 3) {
-            usage(System.out);
+            usage();
             return;
         }
         String host = Constants.GEARMAN_DEFAULT_TCP_HOST;
@@ -68,10 +71,12 @@ public class ReverseClient {
                 port = Integer.parseInt(arg.substring(2));
             }
         }
-        System.out.println(new ReverseClient(host, port).reverse(payload));     //NOPMD
+        ReverseClient rc = new ReverseClient(host, port);
+        System.out.println(rc.reverse(payload));                                //NOPMD
+        rc.shutdown();
     }
 
-    public static void usage(PrintStream out) {
+    public static void usage() {
         String[] usage = {
             "usage: org.gearman.example.ReverseClient [-h<host>] [-p<port>] " +
                     "<string>",
@@ -83,7 +88,7 @@ public class ReverseClient {
         };
 
         for (String line : usage) {
-            out.println(line);
+            System.err.println(line);                                           //NOPMD
         }
     }
 }
