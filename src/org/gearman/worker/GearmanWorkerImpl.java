@@ -224,6 +224,9 @@ public class GearmanWorkerImpl
     public boolean addServer(GearmanJobServerConnection conn)
             throws IllegalArgumentException, IllegalStateException {
 
+        if (conn == null) {
+            throw new IllegalArgumentException("Connection can not be null");
+        }
         //this is a sub-optimal way to look for dups, but addJobServer
         //ops should be infrequent enough that this should be a big penalty
         for (GearmanJobServerSession sess : sessionMap.values()) {

@@ -10,10 +10,13 @@ import org.gearman.common.Constants;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Set;
+import javax.imageio.IIOException;
 import org.gearman.common.GearmanPacket;
 import org.gearman.client.GearmanIOEventListener;
 import org.junit.Test;
 import junit.framework.Assert;
+import org.gearman.client.GearmanClient;
+import org.gearman.common.GearmanJobServerConnection;
 import org.gearman.common.GearmanNIOJobServerConnection;
 import org.junit.After;
 import org.junit.Before;
@@ -114,7 +117,33 @@ public class GearmanWorkerImplTest {
     public void addServerTest() {
         GearmanNIOJobServerConnection conn = new GearmanNIOJobServerConnection("localhost",
                 Constants.GEARMAN_DEFAULT_TCP_PORT + 1);
-        worker.addServer(conn);
+        Assert.assertTrue(worker.addServer(conn));
         Assert.assertTrue((worker.hasServer(conn)));
     }
+
+    @Test
+    public void addDupServerTest() {
+        GearmanNIOJobServerConnection conn = new GearmanNIOJobServerConnection("localhost",
+                Constants.GEARMAN_DEFAULT_TCP_PORT + 1);
+        Assert.assertTrue(worker.addServer(conn));
+        Assert.assertTrue((worker.hasServer(conn)));
+        
+        // For the time being, we define success as the dup 'add' not blowing up
+        // and that the server is still known to the client. Ideally, we should
+        // check and make sure that we have not increased the number of servers
+        // known by the worker, but the test lacks the visibility to test that.
+        conn = new GearmanNIOJobServerConnection("localhost",
+                Constants.GEARMAN_DEFAULT_TCP_PORT + 1);
+        Assert.assertTrue(worker.addServer(conn));
+        Assert.assertTrue((worker.hasServer(conn)));
+    }
+
+    @Test
+    public void addNullServerTest() {
+        try {
+            worker.addServer(null);
+            Assert.fail();
+        } catch (IllegalArgumentException expected) {}
+    }
+
 }

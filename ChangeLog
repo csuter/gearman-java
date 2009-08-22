@@ -17,6 +17,8 @@
    register the function with the server when using the default 
    function factory (factory was ignoring the name of the funciton 
    and always registering function with its class name).
+ * Fixed bug #417004 (ReverseClient example shows improper use of 
+   client).
 
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.
