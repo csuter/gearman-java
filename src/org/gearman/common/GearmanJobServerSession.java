@@ -182,7 +182,7 @@ public class GearmanJobServerSession
                     " un-initialized session");
         }
 
-        while (canWrite() && sessionHasDataToWrite()) {
+        while (sessionHasDataToWrite() && canWrite()) {
             if (packetsToWrite.isEmpty()) {
                 connection.write(null);
             } else {

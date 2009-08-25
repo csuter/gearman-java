@@ -19,6 +19,10 @@
    and always registering function with its class name).
  * Fixed bug #417004 (ReverseClient example shows improper use of 
    client).
+ * Fixed bug #417214 (Worker performs slow on linux).
+   client). Connection between worker and job server did not
+   have TCP_NODELAY set, causing performance problems on linux.
+   Changed connection settings to mirror settings in libgearmand.
 
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.

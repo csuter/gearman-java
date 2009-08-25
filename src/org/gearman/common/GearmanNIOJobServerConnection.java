@@ -65,6 +65,15 @@ public class GearmanNIOJobServerConnection
         }
         try {
             serverConnection = SocketChannel.open(remote);
+            serverConnection.socket().setTcpNoDelay(true);
+            serverConnection.socket().setSoLinger(true,
+                    Constants.GEARMAN_DEFAULT_SOCKET_TIMEOUT);
+            serverConnection.socket().setSoTimeout(
+                    Constants.GEARMAN_DEFAULT_SOCKET_TIMEOUT * 1000);
+            serverConnection.socket().setReceiveBufferSize(
+                    Constants.GEARMAN_DEFAULT_SOCKET_RECV_SIZE);
+            serverConnection.socket().setSendBufferSize(
+                    Constants.GEARMAN_DEFAULT_SOCKET_RECV_SIZE);
             serverConnection.configureBlocking(false);
             serverConnection.finishConnect();
             selector = Selector.open();
