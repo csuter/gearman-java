@@ -6,6 +6,7 @@
 package org.gearman.worker;
 
 import org.gearman.client.GearmanIOEventListener;
+import org.gearman.client.GearmanJobResult;
 import org.gearman.common.GearmanPacket;
 
 
@@ -21,7 +22,7 @@ public class ExampleFunction implements GearmanFunction{
         this.data = data;
     }
 
-    public GearmanPacket call() throws Exception {
+    public GearmanJobResult call() throws Exception {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

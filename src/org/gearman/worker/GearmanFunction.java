@@ -7,6 +7,7 @@ package org.gearman.worker;
 
 import java.util.concurrent.Callable;
 import org.gearman.client.GearmanIOEventListener;
+import org.gearman.client.GearmanJobResult;
 import org.gearman.common.GearmanPacket;
 
 /**
@@ -15,7 +16,7 @@ import org.gearman.common.GearmanPacket;
  * {@link org.gearman.client.GearmanJob}. It defines how the job is executed
  * and the data, if any, against which that execution will occurr.
  */
-public interface GearmanFunction extends Callable<GearmanPacket> {
+public interface GearmanFunction extends Callable<GearmanJobResult> {
 
     /**
      * Retrieves the name of the funcion to be executed by the job. This is

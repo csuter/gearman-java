@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.gearman.client.GearmanJobResult;
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanException;
 import org.gearman.common.GearmanJobServerConnection;
@@ -481,7 +482,7 @@ public class GearmanWorkerImpl
             if (executorService == null) {
                 fun.call();
             } else {
-                Future<GearmanPacket> gp = executorService.submit(fun);
+                Future<GearmanJobResult> gp = executorService.submit(fun);
                 FunctionDefinition def = functionMap.get(fun.getName());
                 if (def == null) {
                     LOG.log(Level.WARNING, "Unable to find function " +

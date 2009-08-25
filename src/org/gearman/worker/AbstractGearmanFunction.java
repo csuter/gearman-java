@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.gearman.client.GearmanIOEventListener;
 import org.gearman.client.GearmanJobResult;
+import org.gearman.client.GearmanJobResultImpl;
 import org.gearman.common.GearmanPacket;
 import org.gearman.common.GearmanPacketImpl;
 import org.gearman.common.GearmanPacketMagic;
@@ -109,23 +110,37 @@ public abstract class AbstractGearmanFunction implements GearmanFunction {
 
     public abstract GearmanJobResult executeFunction();
 
-    public GearmanPacket call() {                                               
+    public GearmanJobResult call() {
         GearmanPacket event = null;
+        GearmanJobResult result = null;
+        Exception thrown = null;
         try {
-            GearmanJobResult result = executeFunction();
+            result = executeFunction();
+        } catch (Exception e) {
+            thrown = e;
+        }
+        if (result == null) {
+            String message = thrown == null ? "function returned null result" :
+                thrown.getMessage();
+            fireEvent(new GearmanPacketImpl(GearmanPacketMagic.REQ,
+                    GearmanPacketType.WORK_EXCEPTION,
+                    GearmanPacketImpl.generatePacketData(jobHandle,
+                    message.getBytes())));
+            result = new GearmanJobResultImpl(jobHandle, false, new byte[0],
+                    new byte[0], new byte[0], -1, -1);
+        }
+
+        if (result.jobSucceeded()) {
             event = new GearmanPacketImpl(GearmanPacketMagic.REQ,
                     GearmanPacketType.WORK_COMPLETE,
                     GearmanPacketImpl.generatePacketData(jobHandle,
                     result.getResults()));
-        } catch (Exception e) {
-            fireEvent(new GearmanPacketImpl(GearmanPacketMagic.REQ,
-                    GearmanPacketType.WORK_EXCEPTION,
-                    GearmanPacketImpl.generatePacketData(jobHandle,
-                    e.getMessage().getBytes())));
+        } else {
             event = new GearmanPacketImpl(GearmanPacketMagic.REQ,
                     GearmanPacketType.WORK_FAIL, jobHandle);
+
         }
         fireEvent(event);
-        return event;
+        return result;
     }
 }

@@ -75,6 +75,30 @@ public class AbstractGearmanFunctionTest {
 
     }
 
+    static class TestFailedFunction extends AbstractGearmanFunction {
+        public TestFailedFunction () {
+            super();
+        }
+
+        @Override
+        public GearmanJobResult executeFunction() {
+            return new GearmanJobResultImpl(jobHandle, false, new byte[0],
+                    new byte[0], new byte[0], 5, 10);
+        }
+    }
+
+    static class TestNullResultFunction extends AbstractGearmanFunction {
+
+        public TestNullResultFunction() {
+            super();
+        }
+
+        @Override
+        public GearmanJobResult executeFunction() {
+            return null;
+        }
+    }
+
     TestFunction tf;
     
     @Before
@@ -185,8 +209,32 @@ public class AbstractGearmanFunctionTest {
         TestBadFunction tbf = new TestBadFunction();
         tbf.registerEventListener(el);
         tbf.registerEventListener(fl);
-        tbf.call();
+        GearmanJobResult jr = tbf.call();
         Assert.assertTrue(el.receivedEvent());
         Assert.assertTrue(fl.receivedEvent());
+        Assert.assertFalse(jr.jobSucceeded());
+    }
+
+    @Test
+    public void failedJobCallTest () {
+        TestListener fl = new TestListener(GearmanPacketType.WORK_FAIL);
+        TestFailedFunction tff = new TestFailedFunction();
+        tff.registerEventListener(fl);
+        GearmanJobResult jr = tff.call();
+        Assert.assertTrue(fl.receivedEvent());
+        Assert.assertFalse(jr.jobSucceeded());
+    }
+
+    @Test
+    public void nullJobResultTest () {
+        TestListener el = new TestListener(GearmanPacketType.WORK_EXCEPTION);
+        TestListener fl = new TestListener(GearmanPacketType.WORK_FAIL);
+        TestNullResultFunction tnrf = new TestNullResultFunction();
+        tnrf.registerEventListener(fl);
+        tnrf.registerEventListener(el);
+        GearmanJobResult jr = tnrf.call();
+        Assert.assertTrue(el.receivedEvent());
+        Assert.assertTrue(fl.receivedEvent());
+        Assert.assertFalse(jr.jobSucceeded());
     }
 }

@@ -23,6 +23,11 @@
    client). Connection between worker and job server did not
    have TCP_NODELAY set, causing performance problems on linux.
    Changed connection settings to mirror settings in libgearmand.
+ * Fixed bug #417208 (AbstractGearmanFunction does not correctly
+   handle failing or misbehaving functions). Fix resulted in
+   changing the signature for GearmanFunction interface. The 
+   GearmanFunction interface now extends Callable<GearmanJobResult>,
+   clients of this interface will need to be changed to reflect this.
 
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.

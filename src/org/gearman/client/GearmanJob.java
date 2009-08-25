@@ -7,7 +7,6 @@ package org.gearman.client;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import org.gearman.common.GearmanPacket;
 
 /**
  * The Gearman Job is a basic undivisible unit of work to be executed by a
@@ -86,7 +85,7 @@ public interface GearmanJob
      *
      * @param function The function defining job execution and data.
      */
-    void registerFunction(Callable<GearmanPacket> function);
+    void registerFunction(Callable<GearmanJobResult> function);
 
     /**
      * As a <tt>GearmanJob</tt> progress through its' lifecycle, it will

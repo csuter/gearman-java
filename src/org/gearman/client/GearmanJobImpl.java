@@ -153,7 +153,7 @@ public final class GearmanJobImpl implements GearmanJob, GearmanServerResponseHa
         session = sess;
     }
 
-    public void registerFunction(Callable<GearmanPacket> function) {
+    public void registerFunction(Callable<GearmanJobResult> function) {
         if (function instanceof GearmanFunction) {
             GearmanFunction gf = (GearmanFunction) function;
             gf.setData(this.data);
