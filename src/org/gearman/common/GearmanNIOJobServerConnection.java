@@ -49,7 +49,7 @@ public class GearmanNIOJobServerConnection
         bytesReceived = ByteBuffer.allocate(
                 Constants.GEARMAN_DEFAULT_SOCKET_RECV_SIZE);
         bytesToSend = ByteBuffer.allocate(
-                Constants.GEARMAN_DEFAULT_SOCKET_RECV_SIZE);
+                Constants.GEARMAN_DEFAULT_SOCKET_SEND_SIZE);
         DESCRIPTION = DESCRIPTION_PREFIX + ":" + remote.toString();
     }
 
@@ -138,11 +138,11 @@ public class GearmanNIOJobServerConnection
             int ps = request.getData().length +
                     Constants.GEARMAN_PACKET_HEADER_SIZE;
             if (bytesToSend.remaining() < ps) {
-                //TODO allocate more
-                ByteBuffer bb = ByteBuffer.allocate(bytesToSend.capacity() +
-                        (ps * 10));
-                bb.put(bytesToSend);
-                bytesToSend = bb;
+                int newCapacity = bytesToSend.capacity() * 2;
+                while (newCapacity < ps && newCapacity > 0) {
+                    newCapacity *=2;
+                }
+                bytesToSend = growBuffer(bytesToSend, newCapacity);
             }
             byte[] bytes = request.toBytes();
             ByteBuffer bb = ByteBuffer.allocate(bytes.length);
@@ -152,9 +152,17 @@ public class GearmanNIOJobServerConnection
         }
         selector.selectNow();
         if (selectorKey.isWritable()) {
-            bytesToSend.limit(bytesToSend.position());
+            //Lets never write more than DEFAULT_SOCKET_SEND_SIZE, so if the
+            //buffersize is larger than this, set the limit to default
+            int newLimit = bytesToSend.position();
+            int oldLimit = newLimit;
+            if (newLimit > Constants.GEARMAN_DEFAULT_SOCKET_SEND_SIZE) {
+                newLimit = Constants.GEARMAN_DEFAULT_SOCKET_SEND_SIZE;
+            }
+            bytesToSend.limit(newLimit);
             bytesToSend.rewind();
             int bytesSent = serverConnection.write(bytesToSend);
+            bytesToSend.limit(oldLimit);
             bytesToSend.compact();
             LOG.log(Level.FINER,"Write command wrote " + bytesSent + " to " +
                     this + ". " + bytesToSend.position() + " bytes left in " +
@@ -170,6 +178,9 @@ public class GearmanNIOJobServerConnection
         GearmanPacket returnPacket = null;
         selector.selectNow();
         if (selectorKey.isReadable()) {
+            if (!bytesReceived.hasRemaining()) {
+                bytesReceived = growBuffer(bytesReceived);
+            }
             int bytesRead = serverConnection.read(bytesReceived);
             if (bytesRead >= 0) {
                 LOG.log(Level.FINER, "Session " + this + " has read " +
@@ -285,5 +296,25 @@ public class GearmanNIOJobServerConnection
         buffer.position(originalPosition);
         GearmanPacketHeader ph = new GearmanPacketHeader(header);
         return ph.getDataLength() + Constants.GEARMAN_PACKET_HEADER_SIZE;
+    }
+
+    private ByteBuffer growBuffer(ByteBuffer originalBuffer)
+            throws IllegalArgumentException {
+        return growBuffer(originalBuffer, originalBuffer.capacity() * 2);
+    }
+
+    private ByteBuffer growBuffer(ByteBuffer orginalBuffer, int newCapacity)
+            throws IllegalArgumentException{
+        if (newCapacity < orginalBuffer.capacity()) {
+            throw new IllegalArgumentException("The new capacity of the " +
+                    "buffer (" + newCapacity + ") may not be less than the" +
+                    " orginal capacity (" + orginalBuffer.capacity()+")");
+        }
+        orginalBuffer.flip();
+        ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
+        newBuffer.put(orginalBuffer);
+        return newBuffer;
+
+
     }
 }

@@ -83,7 +83,7 @@ public class GearmanPacketImpl implements GearmanPacket {
     }
 
     public byte[] toBytes() {
-        int totalSize = getDataSize() + 12;
+        int totalSize = getDataSize() + Constants.GEARMAN_PACKET_HEADER_SIZE;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream(totalSize);
         write(baos);
         IOUtil.flush(baos);

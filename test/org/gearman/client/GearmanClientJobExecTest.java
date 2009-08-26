@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.gearman.common.Constants;
 import org.gearman.common.GearmanNIOJobServerConnection;
 import org.gearman.worker.GearmanFunction;
 import org.gearman.worker.GearmanFunctionFactory;
@@ -307,6 +308,35 @@ public class GearmanClientJobExecTest {
                     "running", status.isRunning());
             lrf.keepRunning = true;
 
+        }
+    }
+
+    @Test
+    public void bigPayloadTest() throws ExecutionException, InterruptedException {
+        String id = "null";
+        int messageOverheadSize = Constants.GEARMAN_PACKET_HEADER_SIZE +
+                newReverseFunction.class.getCanonicalName().getBytes().length +
+                id.getBytes().length + 2;
+        int [] payLoadSizes = {
+            Constants.GEARMAN_PACKET_HEADER_SIZE - messageOverheadSize,
+            Constants.GEARMAN_PACKET_HEADER_SIZE - messageOverheadSize + 1,
+            Constants.GEARMAN_PACKET_HEADER_SIZE - messageOverheadSize - 1,
+            (int)((Constants.GEARMAN_PACKET_HEADER_SIZE - messageOverheadSize) * 1.5),
+            (Constants.GEARMAN_PACKET_HEADER_SIZE * 2) - messageOverheadSize,
+            1024 * 1000 * 3, //3MB
+        };
+        for (int curSize : payLoadSizes) {
+            StringBuffer text = generateData(curSize,"Hello World");
+            GearmanJob job = GearmanJobImpl.createJob(
+                newReverseFunction.class.getCanonicalName(),
+                ByteUtils.toUTF8Bytes(text.toString()), id);
+            GearmanJobResult jr = gc.submit(job).get();
+            Assert.assertTrue("bigPayloadTest (size =" + curSize +
+                    ") did not succeed.",jr.jobSucceeded());
+            String resultString = ByteUtils.fromUTF8Bytes(jr.getResults());
+            Assert.assertTrue("bigPayloadTest (size =" + curSize +
+                    ") returned unexpected results.",
+                    resultString.equals(text.reverse().toString()));
         }
     }
 

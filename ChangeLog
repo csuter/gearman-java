@@ -28,6 +28,8 @@
    changing the signature for GearmanFunction interface. The 
    GearmanFunction interface now extends Callable<GearmanJobResult>,
    clients of this interface will need to be changed to reflect this.
+ * Fixed bug #418927. We can now send a receive payloads larger then
+   the default buffer sizes.
 
 0.02 - 2009-08-06
  * Significantly improved worker and client performance.
