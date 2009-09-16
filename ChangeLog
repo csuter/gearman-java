@@ -1,4 +1,4 @@
-0.03 - 2009-XX-XX
+0.03 - 2009-09-16
  * Cleanup findbugs, pmd, and checkstyle warnings
  * Misc. build improvements
    - build will look for property definitions in 
