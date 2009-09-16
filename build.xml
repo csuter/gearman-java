@@ -1,6 +1,6 @@
 <project name="gearman-java" default="usage" basedir=".">
     <property file="${user.home}/.ant/${ant.project.name}.properties"/>
-    <property name="project.version" value="0.03"/>
+    <property name="project.version" value="0.04"/>
     <property name="src.dir" location="./src" />
     <property name="test.src.dir" location="./test" />
     <property name="build.dir" location="./build" />
