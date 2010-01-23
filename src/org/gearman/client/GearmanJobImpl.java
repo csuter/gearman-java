@@ -302,7 +302,7 @@ public final class GearmanJobImpl implements GearmanJob, GearmanServerResponseHa
                 validateJobHandle(event.getDataComponentValue(
                         GearmanPacket.DataComponentName.JOB_HANDLE));
                 jobResult = jobResult.addJobResult(
-                        new GearmanJobResultImpl(handle, true, null, null, null,
+                        new GearmanJobResultImpl(handle, false, null, null, null,
                         -1, -1));
                 isComplete = true;
                 break;

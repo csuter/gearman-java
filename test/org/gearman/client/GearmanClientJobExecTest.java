@@ -139,6 +139,30 @@ public class GearmanClientJobExecTest {
         }
     }
 
+    class failedFunction extends AbstractGearmanFunction {
+
+        @Override
+        public GearmanJobResult executeFunction() {
+            return new GearmanJobResultImpl(jobHandle, false, new byte[0],
+                    new byte[0], new byte[0], 0, 0);
+        }
+    }
+
+    class failedFunctionFactory implements GearmanFunctionFactory {
+        failedFunction ff = null;
+
+        public String getFunctionName() {
+            return failedFunction.class.getCanonicalName();
+        }
+
+        public synchronized GearmanFunction getFunction() {
+            if (ff == null) {
+                ff = new failedFunction();
+            }
+            return ff;
+        }
+    }
+
     class WorkerRunnable implements Runnable {
 
         GearmanWorker myWorker = null;
@@ -186,6 +210,7 @@ public class GearmanClientJobExecTest {
         worker.registerFunctionFactory(lrff);
         worker.registerFunctionFactory(new newReverseFunctionFactory());
         worker.registerFunctionFactory(new incrementalReverseFunctionFactory());
+        worker.registerFunctionFactory(new failedFunctionFactory());
 
         //create a worker for each of the job servers
         worker.addServer(new GearmanNIOJobServerConnection("localhost"));
@@ -338,6 +363,14 @@ public class GearmanClientJobExecTest {
                     ") returned unexpected results.",
                     resultString.equals(text.reverse().toString()));
         }
+    }
+
+    @Test
+    public void bug511489() throws ExecutionException, InterruptedException {
+        GearmanJob job = GearmanJobImpl.createJob(
+            failedFunction.class.getCanonicalName(), null,null);
+        GearmanJobResult result = gc.submit(job).get();
+        Assert.assertFalse(result.jobSucceeded());
     }
 
     private Thread startWorkerThread(Runnable r, String name) {
