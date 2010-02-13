@@ -1,4 +1,7 @@
-0.04 - 2009-XX-XX
+0.04 - 2010-XX-XX
+ * Fixed bug 511489, checking the status of a failed job incorrectly
+   returns true.
+ * Refactored tests.
 
 0.03 - 2009-09-16
  * Cleanup findbugs, pmd, and checkstyle warnings

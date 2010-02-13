@@ -7,27 +7,31 @@ package org.gearman.client;
 
 import java.io.IOException;
 
-import junit.framework.Assert;
-
-import org.gearman.common.GearmanPacketType;
-import org.gearman.util.ByteUtils;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import junit.framework.Assert;
+
 import org.gearman.common.Constants;
 import org.gearman.common.GearmanNIOJobServerConnection;
-import org.gearman.worker.GearmanFunction;
-import org.gearman.worker.GearmanFunctionFactory;
-import org.gearman.common.GearmanPacket;
-import org.gearman.worker.AbstractGearmanFunction;
+import org.gearman.tests.functions.FailedFunction;
+import org.gearman.tests.functions.FailedFunctionFactory;
+import org.gearman.tests.functions.IncrementalReverseFunction;
+import org.gearman.tests.functions.IncrementalReverseFunctionFactory;
+import org.gearman.tests.functions.LongRunningFunction;
+import org.gearman.tests.functions.LongRunningFunctionFactory;
+import org.gearman.tests.functions.ReverseFunction;
+import org.gearman.tests.functions.ReverseFunctionFactory;
+import org.gearman.tests.util.IncrementalListener;
+import org.gearman.tests.util.WorkerRunnable;
+import org.gearman.util.ByteUtils;
 import org.gearman.worker.GearmanWorker;
-
 import org.gearman.worker.GearmanWorkerImpl;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GearmanClientJobExecTest {
@@ -37,168 +41,7 @@ public class GearmanClientJobExecTest {
     Thread workerThread = null;
     WorkerRunnable runner = null;
     Thread wt = null;
-    GearmanFunctionFactory lrff = null;
-
-    class incrementalReverseFunctionFactory implements GearmanFunctionFactory {
-
-        public String getFunctionName() {
-            return incrementalReverseFunction.class.getCanonicalName();
-        }
-
-        public GearmanFunction getFunction() {
-            return new incrementalReverseFunction();
-        }
-
-    }
-
-    class incrementalReverseFunction extends AbstractGearmanFunction {
-
-        public GearmanJobResult executeFunction() {
-            StringBuffer sb = null;
-            if (data instanceof byte []) {
-                sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte [])data));
-            } else {
-                sb = new StringBuffer(data.toString());
-            }
-            sb = sb.reverse();
-
-            for (int i = 0; i < sb.length(); i++) {
-                sendData(sb.substring(i, i + 1).getBytes());
-            }
-            return new GearmanJobResultImpl(jobHandle, true, new byte[0],
-                    new byte[0], new byte[0], 0, 0);
-        }
-
-    }
-
-    class newReverseFunctionFactory implements GearmanFunctionFactory {
-
-        public String getFunctionName() {
-            return newReverseFunction.class.getCanonicalName();
-        }
-
-        public GearmanFunction getFunction() {
-           return new newReverseFunction();
-        }
-
-    }
-
-    class newReverseFunction extends AbstractGearmanFunction {
-
-        @Override
-        public GearmanJobResult executeFunction() {
-            StringBuffer sb = null;
-            byte [] results = null;
-            if (data instanceof byte []) {
-                sb = new StringBuffer(ByteUtils.fromUTF8Bytes((byte [])data));
-            } else {
-                sb = new StringBuffer(data.toString());
-            }
-            results = sb.reverse().toString().getBytes();
-            return new GearmanJobResultImpl(jobHandle, true, results,
-                    new byte[0], new byte[0], 0, 0);
-        }
-    }
-
-    class longRunningFunctionFactory implements GearmanFunctionFactory {
-        longRunningFunction lrf = null;
-
-        public String getFunctionName() {
-            return longRunningFunction.class.getCanonicalName();
-        }
-
-        public synchronized GearmanFunction getFunction() {
-            if (lrf == null) {
-                lrf = new longRunningFunction();
-            }
-            return lrf;
-        }
-    }
-
-    class longRunningFunction extends AbstractGearmanFunction {
-
-        boolean keepRunning = true;
-
-        public GearmanJobResult executeFunction() {
-            while (keepRunning) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ie) {
-                }
-            }
-            return new GearmanJobResultImpl(jobHandle, true, new byte[0],
-                    new byte[0], new byte[0], 0, 0);
-        }
-
-        public void isDone() {
-            keepRunning = false;
-        }
-
-        public boolean isRunning() {
-            return keepRunning;
-        }
-    }
-
-    class failedFunction extends AbstractGearmanFunction {
-
-        @Override
-        public GearmanJobResult executeFunction() {
-            return new GearmanJobResultImpl(jobHandle, false, new byte[0],
-                    new byte[0], new byte[0], 0, 0);
-        }
-    }
-
-    class failedFunctionFactory implements GearmanFunctionFactory {
-        failedFunction ff = null;
-
-        public String getFunctionName() {
-            return failedFunction.class.getCanonicalName();
-        }
-
-        public synchronized GearmanFunction getFunction() {
-            if (ff == null) {
-                ff = new failedFunction();
-            }
-            return ff;
-        }
-    }
-
-    class WorkerRunnable implements Runnable {
-
-        GearmanWorker myWorker = null;
-        boolean isRunning = true;
-
-        public WorkerRunnable(GearmanWorker w) {
-            myWorker = w;
-        }
-
-        public void run() {
-            while (isRunning) {
-                myWorker.work();
-            }
-        }
-
-        public void stop() {
-            isRunning = false;
-        }
-    }
-
-    class IncrementalListener implements GearmanIOEventListener {
-
-        private StringBuffer sb = new StringBuffer();
-        public void handleGearmanIOEvent(GearmanPacket event) 
-                throws IllegalArgumentException {
-            if (!event.getPacketType().equals(GearmanPacketType.WORK_DATA)) {
-                return;
-            }
-            sb.append(ByteUtils.fromUTF8Bytes((event.getDataComponentValue(
-                        GearmanPacket.DataComponentName.DATA))));
-        }
-        public String getResults() {
-            return sb.toString();
-        }
-
-    }
+    LongRunningFunctionFactory lrff = null;
 
     @Before
     public void initTest() throws IOException {
@@ -206,11 +49,11 @@ public class GearmanClientJobExecTest {
         worker = new GearmanWorkerImpl();
         gc.addJobServer(new GearmanNIOJobServerConnection("localhost"));
 
-        lrff = new longRunningFunctionFactory();
+        lrff = new LongRunningFunctionFactory();
         worker.registerFunctionFactory(lrff);
-        worker.registerFunctionFactory(new newReverseFunctionFactory());
-        worker.registerFunctionFactory(new incrementalReverseFunctionFactory());
-        worker.registerFunctionFactory(new failedFunctionFactory());
+        worker.registerFunctionFactory(new ReverseFunctionFactory());
+        worker.registerFunctionFactory(new IncrementalReverseFunctionFactory());
+        worker.registerFunctionFactory(new FailedFunctionFactory());
 
         //create a worker for each of the job servers
         worker.addServer(new GearmanNIOJobServerConnection("localhost"));
@@ -232,7 +75,7 @@ public class GearmanClientJobExecTest {
         for (int i = 0; i < 100; i++) {
             StringBuffer text = generateData(8193, "Hello World");
             GearmanJob job = GearmanJobImpl.createJob(
-                    newReverseFunction.class.getCanonicalName(),
+                    ReverseFunction.class.getCanonicalName(),
                     ByteUtils.toAsciiBytes(text.toString()),null);
             GearmanJobResult result = gc.submit(job).get();
             Assert.assertTrue(result.jobSucceeded());
@@ -248,7 +91,7 @@ public class GearmanClientJobExecTest {
             throws IOException, InterruptedException, ExecutionException {
             StringBuffer text = generateData(8193, "Hello World");
             GearmanJob job = GearmanJobImpl.createJob(
-                    incrementalReverseFunction.class.getCanonicalName(),
+                    IncrementalReverseFunction.class.getCanonicalName(),
                     ByteUtils.toAsciiBytes(text.toString()), null);
             IncrementalListener il = new IncrementalListener();
             job.registerEventListener(il);
@@ -270,7 +113,7 @@ public class GearmanClientJobExecTest {
         ArrayList <Future> futures = new ArrayList<Future>();
         for (int i = 0; i < num; i++) {
             GearmanJob job = GearmanJobImpl.createJob(
-                    newReverseFunction.class.getCanonicalName(),
+                    ReverseFunction.class.getCanonicalName(),
                     ByteUtils.toAsciiBytes(text.toString()),null);
             futures.add(gc.submit(job));
             Assert.assertTrue(job.getHandle() != null);
@@ -294,7 +137,7 @@ public class GearmanClientJobExecTest {
             throws IOException, InterruptedException, ExecutionException,
             TimeoutException {
         GearmanJobStatus status = null;
-        longRunningFunction lrf = (longRunningFunction) lrff.getFunction();
+        LongRunningFunction lrf = (LongRunningFunction) lrff.getFunction();
         for (int x = 0; x < 10; x++) {
             GearmanJobImpl job = (GearmanJobImpl)
                     GearmanJobImpl.createBackgroundJob(lrff.getFunctionName(),
@@ -331,8 +174,7 @@ public class GearmanClientJobExecTest {
                     status.isKnown());
             Assert.assertFalse("updateJobStatus reports completed job as " +
                     "running", status.isRunning());
-            lrf.keepRunning = true;
-
+            lrf.reset();
         }
     }
 
@@ -340,7 +182,7 @@ public class GearmanClientJobExecTest {
     public void bigPayloadTest() throws ExecutionException, InterruptedException {
         String id = "null";
         int messageOverheadSize = Constants.GEARMAN_PACKET_HEADER_SIZE +
-                newReverseFunction.class.getCanonicalName().getBytes().length +
+                ReverseFunction.class.getCanonicalName().getBytes().length +
                 id.getBytes().length + 2;
         int [] payLoadSizes = {
             Constants.GEARMAN_PACKET_HEADER_SIZE - messageOverheadSize,
@@ -353,7 +195,7 @@ public class GearmanClientJobExecTest {
         for (int curSize : payLoadSizes) {
             StringBuffer text = generateData(curSize,"Hello World");
             GearmanJob job = GearmanJobImpl.createJob(
-                newReverseFunction.class.getCanonicalName(),
+                ReverseFunction.class.getCanonicalName(),
                 ByteUtils.toUTF8Bytes(text.toString()), id);
             GearmanJobResult jr = gc.submit(job).get();
             Assert.assertTrue("bigPayloadTest (size =" + curSize +
@@ -368,7 +210,7 @@ public class GearmanClientJobExecTest {
     @Test
     public void bug511489() throws ExecutionException, InterruptedException {
         GearmanJob job = GearmanJobImpl.createJob(
-            failedFunction.class.getCanonicalName(), null,null);
+            FailedFunction.class.getCanonicalName(), null,null);
         GearmanJobResult result = gc.submit(job).get();
         Assert.assertFalse(result.jobSucceeded());
     }
