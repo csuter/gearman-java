@@ -2,6 +2,8 @@
  * Fixed bug 511489, checking the status of a failed job incorrectly
    returns true.
  * Refactored tests.
+ * Fixed bug 516195, more effective means of randomly picking a job
+   server.
 
 0.03 - 2009-09-16
  * Cleanup findbugs, pmd, and checkstyle warnings

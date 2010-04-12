@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -581,7 +582,8 @@ public class GearmanClientImpl
         ArrayList<GearmanJobServerSession> sessions = new
                 ArrayList<GearmanJobServerSession>();
         sessions.addAll(sessionsMap.values());
-        int s = (int) Math.round((Math.random() * (sessions.size() - 1)));
+        Random rand = new Random(System.currentTimeMillis());
+        int s = rand.nextInt(sessions.size());
         GearmanJobServerSession session = sessions.get(s);
         if (!session.isInitialized()) {
             session.initSession(ioAvailable, this);
